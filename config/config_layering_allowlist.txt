@@ -1,0 +1,10 @@
+# Temporary exceptions for backend/bin/check_config_layering
+# One relative path per line. Keep this list shrinking.
+
+app/controllers/system/health_controller.rb
+app/services/matching/state/order_status_validator.rb
+app/services/realtime/base_service.rb
+app/services/sidekiq/cluster/instance_registry.rb
+app/services/sidekiq/election/service.rb
+app/services/test_support/generators/authentication_generator.rb
+app/sidekiq/jobs/indexer/event_collector_job.rb

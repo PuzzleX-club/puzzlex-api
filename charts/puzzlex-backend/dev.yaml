@@ -1,0 +1,45 @@
+# Example environment overrides
+# Note: Actual values will be injected from external helm files
+# Usage: helm install puzzlex-backend . -f dev.yaml
+
+# Override image tag for development
+image:
+  tag: "dev"
+
+# Reduce replicas for development
+web:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+cable:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+sidekiq:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Development environment variables
+commonEnv:
+  - name: RAILS_ENV
+    value: "development"
+  - name: RAILS_LOG_LEVEL
+    value: "debug"

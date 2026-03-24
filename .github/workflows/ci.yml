@@ -1,0 +1,146 @@
+# PuzzleX 后端 CI 工作流
+# 运行 RSpec 测试并生成代码覆盖率报告
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# 同一分支的新 push 会取消正在运行的旧 workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RAILS_ENV: test
+  CI: true
+  # 数据库连接 - 统一使用 PostgreSQL
+  DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/test_db
+  REDIS_URL: redis://127.0.0.1:6379/0
+  # Rails 配置
+  SECRET_KEY_BASE: ci-test-secret-key-base-not-for-production
+  # Price Token 配置（云原生 - 动态代币映射）
+  PRICE_TOKEN_00_SYMBOL: ETH
+  PRICE_TOKEN_00_ADDRESS: "0x0000000000000000000000000000000000000000"
+  PRICE_TOKEN_01_SYMBOL: USDT
+  PRICE_TOKEN_01_ADDRESS: "0x39c638bfBB5FeA6C452f57C6c0e55B83864bB043"
+  # 合约地址（CI 测试用）
+  BLOCKCHAIN_RPC_URL: "http://127.0.0.1:8545"
+  CHAIN_ID: "31337"
+  SEAPORT_CONTRACT_ADDRESS: "0xB5d83490F020864e00C518ab69c7c6a19968af64"
+  SEAPORT_PROXY_CONTRACT_ADDRESS: "0x3E04D8acD5d172E3D04974c3c48Afbc6207f3896"
+  NFT_CONTRACT_ADDRESS: "0x70E7F91B5dFbBbd860206a596e947BE31Cec742c"
+  ERC20_CONTRACT_ADDRESS: "0x39c638bfBB5FeA6C452f57C6c0e55B83864bB043"
+  ZONE_CONTRACT_ADDRESS: "0x084c52E2153a3498Bd597A4d27233ee5d42c3955"
+  PLATFORM_CONTRACT_ADDRESS: "0xdD2FD4581271e230360230F9337D5c0430Bf44C0"
+  ROYALTY_CONTRACT_ADDRESS: "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199"
+
+jobs:
+  test:
+    name: RSpec Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev
+
+      - name: Check config layering boundaries
+        run: |
+          ruby bin/check_config_layering
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h 127.0.0.1 -p 5432 -U postgres; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+
+      - name: Setup database
+        run: |
+          bin/rails db:create
+          bin/rails db:migrate
+
+      - name: Run RSpec tests
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 20
+          max_attempts: 2
+          retry_wait_seconds: 10
+          command: |
+            bundle exec rspec \
+              --format documentation \
+              --format RspecJunitFormatter \
+              --out tmp/rspec_results.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: tmp/rspec_results.xml
+          retention-days: 7
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+
+      - name: Coverage Summary
+        if: always()
+        run: |
+          if [ -f coverage/.last_run.json ]; then
+            echo "### Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            line_coverage=$(cat coverage/.last_run.json | jq -r '.result.line')
+            branch_coverage=$(cat coverage/.last_run.json | jq -r '.result.branch // "N/A"')
+            echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Line | ${line_coverage}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| Branch | ${branch_coverage}% |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Download full report from Artifacts." >> $GITHUB_STEP_SUMMARY
+          fi

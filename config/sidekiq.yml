@@ -1,0 +1,139 @@
+:scheduler:
+  :schedule:
+    market_data_broadcast_dispatcher:
+      cron: '* * * * * *'
+      class: 'Jobs::MarketData::Broadcast::DispatcherJob'
+      queue: 'scheduler'
+      description: "市场数据广播主调度器，统一分发实时广播任务"
+
+    matching_dispatch:
+      cron: "*/10 * * * * *"
+      class: "Jobs::Matching::DispatcherJob"
+      queue: "scheduler"
+      description: "撮合调度任务，每10秒扫描市场并分发执行任务"
+
+    matching_recovery:
+      cron: "*/30 * * * * *"
+      class: "Jobs::Matching::RecoveryJob"
+      queue: "critical"
+      description: "智能恢复撮合失败的订单，检查链上状态和余额"
+
+    matching_timeout:
+      cron: "0 * * * * *"
+      class: "Jobs::Matching::TimeoutJob"
+      queue: "scheduler"
+      description: "检查并处理超时的matching状态订单"
+
+    matching_over_match_dispatch:
+      cron: "0 */5 * * * *"
+      class: "Jobs::Matching::OverMatchDispatchJob"
+      queue: "scheduler"
+      description: "定时检测超匹配订单并恢复"
+
+    matching_failure_handler:
+      cron: "*/5 * * * * *"
+      class: "Jobs::Matching::FailureHandlerJob"
+      queue: "scheduler"
+      description: "处理执行器失败消息并推进订单到paused/match_failed"
+
+    market_data_generation_kline:
+      cron: "0 * * * * *"
+      class: "Jobs::MarketData::Generation::KlineJob"
+      queue: "default"
+      description: "生成 K 线数据，每分钟执行一次"
+
+    market_data_generation_aggregate:
+      cron: "50 * * * * *"
+      class: "Jobs::MarketData::Generation::MarketAggregateJob"
+      queue: "market_data"
+      description: "聚合所有市场的 24h 行情数据"
+
+    market_data_broadcast_snapshot:
+      cron: "0 * * * * *"
+      class: "Jobs::MarketData::Broadcast::MarketSnapshotJob"
+      queue: "market_data"
+      description: "基于 MarketIntradayStat 广播 MARKET@1440 快照"
+
+    market_data_sync_registry:
+      cron: "0 */10 * * * *"
+      class: "Jobs::MarketData::Sync::MarketRegistryJob"
+      queue: "default"
+      description: "同步市场注册表到 Redis"
+
+    market_data_maintenance_summary_refresh:
+      cron: "*/2 * * * * *"
+      class: "Jobs::MarketData::Maintenance::MarketSummaryRefreshJob"
+      queue: "scheduler"
+      description: "刷新 dirty 市场的摘要缓存"
+
+    market_data_sync_summary_cache:
+      cron: "*/10 * * * * *"
+      class: "Jobs::MarketData::Sync::MarketSummaryCacheJob"
+      queue: "scheduler"
+      description: "从 PG 同步市场摘要到 Redis"
+
+    market_data_maintenance_summary_ensure:
+      cron: "0 0 * * * *"
+      class: "Jobs::MarketData::Maintenance::MarketSummaryEnsureJob"
+      queue: "scheduler"
+      description: "扫描 markets，补全 summary 并写入 Redis"
+
+    indexer_event_collector:
+      cron: '*/5 * * * * *'
+      class: "Jobs::Indexer::EventCollectorJob"
+      queue: "indexer_collector"
+      description: "Collect on-chain events for subscribed indexer pipelines"
+
+    indexer_instance_metadata_scanner:
+      cron: "*/5 * * * * *"
+      class: "Jobs::Indexer::InstanceMetadataScannerJob"
+      queue: "scheduler"
+      description: "Scan and enqueue instance metadata fetch work"
+
+    indexer_instance_metadata_recovery:
+      cron: "0 0 3 * * *"
+      class: "Jobs::Indexer::InstanceMetadataRecoveryJob"
+      queue: "scheduler"
+      description: "Daily recovery for permanently failed instance metadata records"
+
+    merkle_generate_tree:
+      cron: "0 0 */12 * * *"
+      class: "Jobs::Merkle::GenerateMerkleTreeJob"
+      queue: "scheduler"
+      description: "生成Merkle树的定时任务，每12小时执行一次"
+
+    merkle_tree_guardian:
+      cron: "0 */30 * * * *"
+      class: "Jobs::Merkle::MerkleTreeGuardianJob"
+      queue: "scheduler"
+      description: "Merkle树守护任务，确保Merkle树始终保持最新状态"
+
+:verbose: false
+
+development:
+  :url: "redis://localhost:6380/0"
+  :concurrency: 3
+  :queues:
+    - default
+    - mailers
+
+test:
+  :url: "redis://localhost:6381/0"
+  :concurrency: 5
+  :queues:
+    - critical
+    - broadcast
+    - scheduler
+    - high_priority
+    - default
+    - mailers
+    - blockchain
+    - market_data
+    - order_matching
+    - test_queue
+
+production:
+  :url: <%= ENV.fetch("SIDEKIQ_REDIS_URL") { "redis://localhost:6379/1" } %>
+  :concurrency: 10
+  # Public reference config keeps the production queue list outside this file.
+  # Operators can supply queues via CLI flags or an environment-specific override.

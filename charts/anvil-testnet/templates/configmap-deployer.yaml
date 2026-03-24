@@ -1,0 +1,83 @@
+{{- if and .Values.contractDeployer.enabled .Values.contractDeployer.scriptConfigMap }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.contractDeployer.scriptConfigMap }}
+  labels:
+    {{- include "anvil-testnet.labels" . | nindent 4 }}
+data:
+  deploy-contracts.sh: |
+    #!/bin/sh
+    set -e
+
+    echo "=== PuzzleX Contract Deployment Script ==="
+    echo "RPC URL: $ANVIL_RPC_URL"
+    echo "Idempotent mode: $IDEMPOTENT"
+
+    # 函数: 检查合约是否已部署
+    check_contract_exists() {
+      local address=$1
+      local code=$(curl -s -X POST -H "Content-Type: application/json" \
+        --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getCode\",\"params\":[\"$address\", \"latest\"],\"id\":1}" \
+        "$ANVIL_RPC_URL" | grep -o '"result":"[^"]*"' | cut -d'"' -f4)
+
+      if [ "$code" != "0x" ] && [ -n "$code" ]; then
+        return 0  # 合约存在
+      else
+        return 1  # 合约不存在
+      fi
+    }
+
+    # 函数: 部署合约 (使用 forge create)
+    deploy_contract() {
+      local contract_name=$1
+      local contract_path=$2
+      local expected_address=$3
+
+      echo "Deploying $contract_name..."
+
+      # 幂等检查
+      if [ "$IDEMPOTENT" = "true" ] && [ -n "$expected_address" ]; then
+        if check_contract_exists "$expected_address"; then
+          echo "  [SKIP] $contract_name already deployed at $expected_address"
+          return 0
+        fi
+      fi
+
+      # 执行部署 (示例命令，实际需要根据项目配置)
+      # forge create --rpc-url "$ANVIL_RPC_URL" --private-key "$PRIVATE_KEY" "$contract_path"
+
+      echo "  [TODO] Actual deployment logic for $contract_name"
+      echo "  Contract path: $contract_path"
+    }
+
+    # =============================================
+    # 合约部署列表 (根据项目需求配置)
+    # =============================================
+
+    echo ""
+    echo "=== Checking existing contracts ==="
+
+    # 示例: 检查 Seaport 合约
+    # SEAPORT_ADDRESS="0x..."
+    # if check_contract_exists "$SEAPORT_ADDRESS"; then
+    #   echo "Seaport already deployed at $SEAPORT_ADDRESS"
+    # else
+    #   deploy_contract "Seaport" "contracts/seaport/src/Seaport.sol" "$SEAPORT_ADDRESS"
+    # fi
+
+    # 示例: 检查 ERC20 测试代币
+    # ERC20_ADDRESS="0x..."
+    # deploy_contract "TestERC20" "contracts/test/TestERC20.sol" "$ERC20_ADDRESS"
+
+    echo ""
+    echo "=== Contract deployment completed ==="
+    echo "Note: Configure actual deployment logic in this script"
+    echo "      or use external deployment tools (Foundry/Hardhat)"
+
+    # 输出部署地址供后续使用
+    # echo "SEAPORT_ADDRESS=$SEAPORT_ADDRESS" >> /data/deployed-contracts.env
+    # echo "ERC20_ADDRESS=$ERC20_ADDRESS" >> /data/deployed-contracts.env
+
+    echo "=== Done ==="
+{{- end }}

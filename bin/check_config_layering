@@ -1,0 +1,71 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "pathname"
+require "set"
+
+ROOT = Pathname.new(__dir__).join("..").expand_path
+ALLOWLIST_PATH = ROOT.join("config/config_layering_allowlist.txt")
+SCAN_ROOTS = [
+  ROOT.join("app"),
+  ROOT.join("test_support_service")
+].freeze
+
+DIRECT_ENV_PATTERN = /(ENV\[(?:'|")|ENV\.fetch\()/
+LEGACY_CONFIG_PATTERN = /(Rails\.configuration\.blockchain|Rails\.application\.config\.blockchain|config\.blockchain\b)/
+
+def load_allowlist
+  return Set.new unless ALLOWLIST_PATH.exist?
+
+  ALLOWLIST_PATH.each_line.map(&:strip).reject { |line| line.empty? || line.start_with?("#") }.to_set
+end
+
+allowlist = load_allowlist
+violations = []
+
+SCAN_ROOTS.each do |scan_root|
+  next unless scan_root.exist?
+
+  Dir.glob(scan_root.join("**/*.rb").to_s).sort.each do |file_path|
+    path = Pathname.new(file_path)
+    relative_path = path.relative_path_from(ROOT).to_s
+
+    next if allowlist.include?(relative_path)
+
+    path.each_line.with_index(1) do |line, line_number|
+      stripped = line.strip
+      next if stripped.start_with?("#")
+
+      if line.match?(DIRECT_ENV_PATTERN)
+        violations << {
+          kind: "direct_env",
+          file: relative_path,
+          line: line_number,
+          content: stripped
+        }
+      end
+
+      if line.match?(LEGACY_CONFIG_PATTERN)
+        violations << {
+          kind: "legacy_config",
+          file: relative_path,
+          line: line_number,
+          content: stripped
+        }
+      end
+    end
+  end
+end
+
+if violations.empty?
+  puts "[config-layering] OK: no unapproved ENV/config boundary violations"
+  puts "[config-layering] Allowlisted files: #{allowlist.size}"
+  exit 0
+end
+
+warn "[config-layering] Found #{violations.size} violation(s):"
+violations.each do |violation|
+  warn "  - #{violation[:file]}:#{violation[:line]} [#{violation[:kind]}] #{violation[:content]}"
+end
+warn "[config-layering] Allowed exceptions live in #{ALLOWLIST_PATH.relative_path_from(ROOT)}"
+exit 1

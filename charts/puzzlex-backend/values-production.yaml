@@ -1,0 +1,157 @@
+# Production Environment Configuration
+# 生产环境配置 - Monad 测试网 RPC + 外部数据库
+#
+# Usage:
+#   helm upgrade puzzlex-backend ./charts/puzzlex-backend \
+#     -f values-production.yaml \
+#     --namespace production
+#
+# 前置条件:
+#   1. 创建 puzzlex-secrets Secret:
+#      kubectl create secret generic puzzlex-secrets \
+#        --from-literal=database-url='postgresql://...' \
+#        --from-literal=puzzlex-database-url='postgresql://...' \
+#        --from-literal=redis-url='redis://...' \
+#        --from-literal=rails-master-key='...' \
+#        --from-literal=secret-key-base='...' \
+#        --from-literal=monad-private-key='...'
+#
+# 特点:
+#   - 使用 Monad 测试网 RPC
+#   - 数据库使用外部服务
+#   - 多副本高可用部署
+#   - 启用自动扩缩容
+
+image:
+  repository: your-registry/puzzlex-backend
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# ============================================
+# Web Service (生产环境配置)
+# ============================================
+web:
+  replicaCount: 2
+  ingress:
+    enabled: true
+    hosts:
+      - host: puzzlex.club
+        paths:
+          - path: /
+            pathType: Prefix
+            service: web
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  # 生产环境使用 values.yaml 中的基础配置，仅需覆盖时使用 extraEnv
+  extraEnv:
+    - name: RAILS_LOG_TO_STDOUT
+      value: "true"
+    - name: RAILS_SERVE_STATIC_FILES
+      value: "true"
+
+# ============================================
+# Cable Service (生产环境配置)
+# ============================================
+cable:
+  enabled: true
+  createDeployment: false
+  ingress:
+    enabled: true
+    hosts:
+      - host: puzzlex.club
+        paths:
+          - path: /cable
+            pathType: Prefix
+            service: cable
+
+# ============================================
+# Sidekiq Service (生产环境配置)
+# ============================================
+sidekiq:
+  replicaCount: 2
+  concurrency: 5
+  terminationGracePeriodSeconds: 60
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  # 生产环境使用 values.yaml 中的基础配置，无需额外 extraEnv
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+# ============================================
+# Autoscaling (生产环境启用)
+# ============================================
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# ============================================
+# Pod Disruption Budget (生产环境启用)
+# ============================================
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# ============================================
+# Common Environment Variables (生产环境)
+# ============================================
+commonEnv:
+  # 区块链 RPC - Monad 测试网
+  - name: MONAD_RPC_URL
+    value: "https://testnet-rpc.monad.xyz"
+  - name: MONAD_CHAIN_ID
+    value: "41454"
+  - name: MONAD_TESTNET
+    value: "true"
+  # 区块链私钥 (从 Secret 读取)
+  - name: MONAD_PRIVATE_KEY
+    valueFrom:
+      secretKeyRef:
+        name: puzzlex-secrets
+        key: monad-private-key
+  # 数据库 - 外部服务 (从 Secret 读取)
+  - name: DATABASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: puzzlex-secrets
+        key: puzzlex-database-url
+  - name: REDIS_URL
+    valueFrom:
+      secretKeyRef:
+        name: puzzlex-secrets
+        key: redis-url
+  # Auth JWT 密钥 (从 Secret 读取)
+  - name: AUTH_JWT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: puzzlex-secrets
+        key: auth-jwt-secret
+  - name: SECRET_KEY_BASE
+    valueFrom:
+      secretKeyRef:
+        name: puzzlex-secrets
+        key: secret-key-base
+
+# ============================================
+# Local Database Services (生产环境禁用)
+# ============================================
+postgresql:
+  enabled: false
+
+redis:
+  enabled: false

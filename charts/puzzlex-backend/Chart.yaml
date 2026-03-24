@@ -1,0 +1,6 @@
+apiVersion: v2
+name: puzzlex-backend
+description: A Helm chart for PuzzleX Backend (Rails + Puma + Action Cable + Sidekiq)
+type: application
+version: 0.1.10
+appVersion: "latest"

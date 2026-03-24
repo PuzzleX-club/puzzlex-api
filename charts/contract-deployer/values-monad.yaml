@@ -1,0 +1,33 @@
+# contract-deployer - Monad 测试网配置
+# 使用 Job 模式连接外部 RPC
+
+mode: job
+
+network:
+  rpcUrl: "https://testnet-rpc.monad.xyz"
+  chainId: 10143
+
+deployment:
+  # 生产环境建议先 dry-run 检查
+  dryRun: false
+  waitForRpc: false
+  keepAlive: false
+
+# 测试合约不部署到生产网络
+contracts:
+  nicksFactory: true
+  allowedZoneManager: true
+  conduitController: true
+  seaport: true
+  lumiItemZone: true
+  testERC1155: false
+  testERC20: false
+
+# 私钥需要通过 Secret 单独配置
+secrets:
+  name: monad-deployer-keys
+  privateKeyKey: deployer-private-key
+
+job:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 600

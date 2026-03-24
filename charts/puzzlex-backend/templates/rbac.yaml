@@ -1,0 +1,31 @@
+{{- if and .Values.serviceAccount.create .Values.contractAddresses.waitForConfigMap }}
+# Role for Init Container to read ConfigMaps
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "puzzlex-backend.fullname" . }}-configmap-reader
+  labels:
+    {{- include "puzzlex-backend.labels" . | nindent 4 }}
+rules:
+  # Allow reading the contract-addresses ConfigMap
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: [{{ .Values.contractAddresses.configMapName | default "contract-addresses" | quote }}]
+    verbs: ["get", "list", "watch"]
+---
+# RoleBinding to associate ServiceAccount with Role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "puzzlex-backend.fullname" . }}-configmap-reader
+  labels:
+    {{- include "puzzlex-backend.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "puzzlex-backend.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "puzzlex-backend.fullname" . }}-configmap-reader
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

@@ -1,0 +1,18 @@
+{{- if .Values.sidekiq.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "puzzlex-backend.component.fullname" (dict "component" "sidekiq" "Values" .Values "Release" .Release "Chart" .Chart) }}-headless
+  labels:
+    {{- include "puzzlex-backend.component.labels" (dict "component" "sidekiq" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "puzzlex-backend.component.selectorLabels" (dict "component" "sidekiq" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 4 }}
+  # Sidekiq 当前没有暴露 metrics 端口
+  # 如果后续需要 Prometheus metrics，可添加：
+  # ports:
+  # - port: 9293
+  #   name: metrics
+  # 需要安装 sidekiq_prometheus gem 并配置 metrics 中间件
+{{- end }}

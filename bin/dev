@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+# 检查 foreman 是否已经安装，如果没有则安装
+if ! gem list --installed --exact foreman > /dev/null 2>&1; then
+  echo "Installing foreman..."
+  gem install foreman
+fi
+
+# 默认使用端口 3000
+export PORT="${PORT:-3000}"
+
+# 启动 Foreman 并忽略环境文件
+exec foreman start -f Procfile.dev --env /dev/null "$@"

@@ -1,0 +1,15 @@
+apiVersion: v2
+name: contract-deployer
+description: PuzzleX 合约部署器 - 通用合约部署/检查容器
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+keywords:
+  - ethereum
+  - smart-contracts
+  - deployer
+  - foundry
+
+maintainers:
+  - name: PuzzleX Team

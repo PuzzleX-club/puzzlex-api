@@ -1,0 +1,50 @@
+[
+  {
+    "item_id": 1,
+    "icon": "[\"https://example.com/items/sword.png\"]",
+    "item_type": 1,
+    "sub_type": 0,
+    "quality": [1, 2, 3],
+    "talent_ids": [1],
+    "use_level": 1,
+    "can_mint": true,
+    "sellable": true,
+    "enabled": true,
+    "translations": [
+      { "locale": "zh-CN", "name": "铁剑", "description": "一把普通的铁剑，适合新手冒险者使用。" },
+      { "locale": "en", "name": "Iron Sword", "description": "A common iron sword suitable for novice adventurers." }
+    ]
+  },
+  {
+    "item_id": 2,
+    "icon": "[\"https://example.com/items/wood.png\"]",
+    "item_type": 2,
+    "sub_type": 0,
+    "quality": [1],
+    "talent_ids": [2],
+    "use_level": 0,
+    "can_mint": true,
+    "sellable": true,
+    "enabled": true,
+    "translations": [
+      { "locale": "zh-CN", "name": "木材", "description": "常见的建筑材料。" },
+      { "locale": "en", "name": "Wood", "description": "Common building material." }
+    ]
+  },
+  {
+    "item_id": 3,
+    "icon": "[\"https://example.com/items/potion.png\"]",
+    "item_type": 3,
+    "sub_type": 1,
+    "quality": [1, 2],
+    "talent_ids": [],
+    "use_level": 2,
+    "can_mint": false,
+    "sellable": true,
+    "enabled": true,
+    "translations": [
+      { "locale": "zh-CN", "name": "治疗药水", "description": "恢复少量生命值。" },
+      { "locale": "en", "name": "Healing Potion", "description": "Restores a small amount of health." }
+    ]
+  }
+]

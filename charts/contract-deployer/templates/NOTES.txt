@@ -1,0 +1,50 @@
+PuzzleX Contract Deployer
+=========================
+
+Mode: {{ .Values.mode }}
+Network: {{ .Values.network.rpcUrl }} (Chain ID: {{ .Values.network.chainId }})
+Dry Run: {{ .Values.deployment.dryRun }}
+
+{{- if eq .Values.mode "job" }}
+
+Job deployed. To check status:
+
+  kubectl get jobs {{ include "contract-deployer.fullname" . }}
+
+To view logs:
+
+  kubectl logs -f job/{{ include "contract-deployer.fullname" . }}
+
+{{- else }}
+
+Sidecar mode enabled. The deployer will run as a sidecar container
+in the Anvil testnet pod.
+
+To check deployment status:
+
+  kubectl logs -f deployment/anvil-testnet -c contract-deployer
+
+{{- end }}
+
+Contracts to deploy:
+{{- if .Values.contracts.nicksFactory }}
+  - Nick's Factory
+{{- end }}
+{{- if .Values.contracts.allowedZoneManager }}
+  - AllowedZoneManager
+{{- end }}
+{{- if .Values.contracts.conduitController }}
+  - ConduitController
+{{- end }}
+{{- if .Values.contracts.seaport }}
+  - Seaport
+{{- end }}
+{{- if .Values.contracts.lumiItemZone }}
+  - LumiItemZone
+{{- end }}
+{{- if .Values.contracts.testERC1155 }}
+  - TestERC1155
+{{- end }}
+{{- if .Values.contracts.testERC20 }}
+  - TestERC20
+{{- end }}

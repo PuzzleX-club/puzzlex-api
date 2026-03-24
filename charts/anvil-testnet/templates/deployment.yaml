@@ -1,0 +1,169 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "anvil-testnet.fullname" . }}
+  labels:
+    {{- include "anvil-testnet.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: {{ .Values.strategy.type }}
+  selector:
+    matchLabels:
+      {{- include "anvil-testnet.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "anvil-testnet.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- /* 使用 ServiceAccount 以获取 RBAC 权限 */}}
+      {{- if .Values.contractDeployer.enabled }}
+      serviceAccountName: {{ include "anvil-testnet.fullname" . }}
+      {{- end }}
+      {{- /* Sidecar 模式不需要 initContainer */}}
+      containers:
+        - name: anvil
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - anvil
+          args:
+            - --host
+            - {{ .Values.anvil.host | quote }}
+            - --port
+            - {{ .Values.anvil.port | quote }}
+            - --chain-id
+            - {{ .Values.anvil.chainId | quote }}
+            - --gas-limit
+            - {{ printf "%d" (int .Values.anvil.gasLimit) | quote }}
+            - --balance
+            - {{ printf "%d" (int .Values.anvil.balance) | quote }}
+            - --accounts
+            - {{ .Values.anvil.accounts | quote }}
+            {{- if gt (int .Values.anvil.blockTime) 0 }}
+            - --block-time
+            - {{ .Values.anvil.blockTime | quote }}
+            {{- end }}
+            {{- if .Values.persistence.enabled }}
+            - --state
+            - /data/anvil-state.json
+            {{- end }}
+          ports:
+            - name: rpc
+              containerPort: {{ .Values.anvil.port }}
+              protocol: TCP
+          env:
+            {{- range .Values.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+            {{- range .Values.extraEnv }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.anvil.port }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.anvil.port }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: anvil-data
+              mountPath: /data
+          {{- end }}
+        {{- /* Sidecar 容器 - 合约部署器 */}}
+        {{- if .Values.contractDeployer.enabled }}
+        - name: contract-deployer
+          image: "{{ .Values.contractDeployer.image.repository }}:{{ .Values.contractDeployer.image.tag }}"
+          imagePullPolicy: {{ .Values.contractDeployer.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: RPC_URL
+              value: "http://localhost:{{ .Values.anvil.port }}"
+            - name: CHAIN_ID
+              value: {{ .Values.anvil.chainId | quote }}
+            - name: DRY_RUN
+              value: {{ .Values.contractDeployer.dryRun | default "false" | quote }}
+            - name: WAIT_FOR_RPC
+              value: "true"
+            - name: KEEP_ALIVE
+              value: "true"
+            - name: CONTRACTS_OUTPUT_PATH
+              value: "/data/runtime_contracts.json"
+            # K8s ConfigMap 配置
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONFIGMAP_NAME
+              value: {{ .Values.contractDeployer.configMapName | default "contract-addresses" | quote }}
+            # 后端使用的 RPC URL（K8s 服务名）
+            - name: BACKEND_RPC_URL
+              value: "http://{{ include "anvil-testnet.fullname" . }}:{{ .Values.anvil.port }}"
+            - name: PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "anvil-testnet.fullname" . }}-deployer
+                  key: deployer-private-key
+            - name: MONAD_OWNER_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "anvil-testnet.fullname" . }}-deployer
+                  key: monad-owner-private-key
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: anvil-data
+              mountPath: /data
+          {{- end }}
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+        {{- end }}
+      {{- if or .Values.persistence.enabled .Values.contractDeployer.enabled }}
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: anvil-data
+          persistentVolumeClaim:
+            claimName: {{ include "anvil-testnet.fullname" . }}-data
+        {{- else }}
+        - name: anvil-data
+          emptyDir: {}
+        {{- end }}
+        {{- if and .Values.contractDeployer.enabled .Values.contractDeployer.scriptConfigMap }}
+        - name: deployer-scripts
+          configMap:
+            name: {{ .Values.contractDeployer.scriptConfigMap }}
+            defaultMode: 0755
+            optional: true
+        {{- end }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

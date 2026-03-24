@@ -1,0 +1,281 @@
+# Files in the config/locales directory are used for internationalization and
+# are automatically loaded by Rails. If you want to use locales other than
+# English, add the necessary files in this directory.
+#
+# To use the locales, use `I18n.t`:
+#
+#     I18n.t "hello"
+#
+# In views, this is aliased to just `t`:
+#
+#     <%= t("hello") %>
+#
+# To use a different locale, set it with `I18n.locale`:
+#
+#     I18n.locale = :es
+#
+# This would use the information in config/locales/es.yml.
+#
+# To learn more about the API, please read the Rails Internationalization guide
+# at https://guides.rubyonrails.org/i18n.html.
+#
+# Be aware that YAML interprets the following case-insensitive strings as
+# booleans: `true`, `false`, `on`, `off`, `yes`, `no`. Therefore, these strings
+# must be quoted to be interpreted as strings. For example:
+#
+#     en:
+#       "yes": yup
+#       enabled: "ON"
+
+en:
+  navigation:
+    home: "Home"
+    about: "About"
+    item: "Item"
+    list_of_product: "List of Product"
+    list_of_instance: "List of Instance"
+    transactions: "Transactions"
+    orders: "Orders"
+    monster: "Monsters"
+    backpack: "My Backpack"
+    login: "Log in"
+    logout: "Log out"
+    account: "Account"
+    signup: "Sign Up"
+    profile: "Profile"
+    setting: "Setting"
+    feedback: "Feedback"
+    doc: "Documentation"
+  meta_data:
+    title: "PuzzleX"
+    description: "All data in the world on the blockchain is public, yet it is all mixed up, and PuzzleX is dedicated to breaking down and integrating information."
+    keywords: "PuzzleX, Monad, NFT, Game"
+    lang: "en"
+  table_header:
+    id: "ID"
+    icon: "Icon"
+    lvl: "Level"
+    specializations: "Specializations"
+    classifications: "Classifications"
+    price_floor: "Realtime Floor"
+    operations: "Operations"
+    name: "Name"
+    description: "Description"
+    created_at: "Created At"
+    updated_at: "Updated At"
+    actions: "Actions"
+    instance_id: "Instance ID"
+    type: "Type"
+    amount: "Amount"
+    price: "Price"
+    time: "Time"
+    product_and_prob: "Product&Prob."
+    hp: "HP"
+    attack: "Attack"
+    defense: "Defense"
+    is_raid: "Raid or Not"
+    trait: "Trait"
+    value: "Value"
+    probability: "Probability"
+    supply: "Supply"
+    produce: "Produce"
+    consume: "Consumed"
+    not_found: "No Data"
+    sync_block: "Sync Block:"
+    order_status: "Order Status"
+    order_price: "Order Price"
+    order_id: "Order ID"
+    material: "Material"
+    hhi: "HHI"
+    rank_number: "Rank"
+    player_hash: "Player Hash"
+    player_revenue: "Revenue"
+    player_sale_count: "Sale Count"
+    player_cost: "Cost"
+    player_cost_count: "Cost Count"
+    player_net_profit: "Net Profit"
+    tx_hash: "Tx Hash"
+    market: "Market"
+  paginate:
+    previous: "Previous"
+    next: "Next"
+    first: "First"
+    last: "Last"
+    truncate: "..."
+  selector:
+    name_contains: "Name contains"
+    submit: "Search"
+    clear_filter: "Clear Filter"
+    start_date: "Start Date"
+    end_date: "End Date"
+    order_open: "OPEN"
+    order_closed: "CLOSED"
+    order_sold: "SOLD"
+    order_cancelled: "CANCELED"
+    specialization_agriculture: "Agriculture"
+    specialization_battle: "Battle"
+    specialization_gathering: "Gathering"
+    classification_special_material: "Special Material"
+    classification_material: "Material"
+    classification_equipment: "Equipment"
+    classification_consumable: "Consumable"
+    classification_material_synthesis: "Material Synthesis"
+    classification_pet_egg: "Pet Egg"
+    classification_placeable: "Placeable"
+    classification_task_ticket: "Task Ticket"
+    classification_totem: "Totem"
+    buyer_address: "Buyer Address"
+    seller_address: "Seller Address"
+    any: "Any"
+  description:
+    ribbon: "Description"
+    goto_market: "Go to Market"
+  recipes:
+    title: "Recipe Detail"
+    ribbon: "Recipes"
+    as_product: "As Product"
+    as_Material: "As Material"
+    purchase_price: "Purchase Price"
+    synthesis_price: "Synthesis Price"
+    all_raw_tab: "All Raw Materials"
+    layer_tab: "Layer"
+    craft_materials_tab: "Craft Materials"
+  monster:
+    show_title: "Monster Detail"
+  transactions:
+    title: "Transactions"
+    ribbon: "Transactions"
+    list_title: "List of Transactions"
+    table_tab_history: "Transactions History"
+    table_tab_open: "Realtime Orders"
+    instance_transaction_card_title: "Transaction History of %{name}"
+    item_transaction_card_title: "Transaction History of：%{name}"
+    no_transaction: "No transaction record."
+  orders:
+    list_title: "List of Orders"
+    detail:
+      title: "Order Detail"
+      detail_card_ribbon: "Order Status"
+      order_detail_card_title: "Order Status"
+      seller: "Seller"
+      expired_at: "Expired At"
+    matches:
+      title: "Matches"
+      matches_card_ribbon: "Matches"
+      buyer: "Buyer"
+      amount: "Amount"
+      price: "Price"
+    table_tab_open: "Realtime Orders"
+    amount: "Amount"
+    available_amount: "Available Amount"
+    update_time: "Update Time"
+    instance_order_card_title: "Realtime Orders of %{name}"
+    item_order_card_title: "Realtime Orders of %{name}"
+    no_instance_order: "No valid order for this instance."
+    no_item_order: "No valid order for this item."
+    instance_detail: "Instance Detail"
+  items:
+    show_title: "Item Detail"
+    list_title: "List of Items"
+  instances:
+    show_title: "Instance Detail"
+    list_title: "List of Instances"
+    instance_traits: "Instance Traits"
+    ft_traits: "Fungible Traits"
+    nft_traits: "Non-Fungible Traits"
+    gs_score: "Gear Score"
+  players:
+    show_title: "Player Detail"
+    list_title: "List of Players"
+    equipments:
+      show_title: "Equipment Detail"
+      list_title: "List of Equipments"
+      battle: "Battle"
+      agriculture: "Agriculture"
+      gathering: "Gathering"
+      table:
+        name: "Name"
+        level: "Level"
+        value: "Value"
+        default: "No Equipment"
+        classification: "Classification"
+    balance:
+        show_title: "Balance Detail"
+        list_title: "List of Balances"
+        table:
+            name: "Name"
+            instance: "Instance"
+            balance: "Balance"
+            default: "No Balance"
+            mintamount: "Mint Amount"
+            transferredInAmount: "Transferred In Amount"
+            transferredOutAmount: "Transferred Out Amount"
+            burnedAmount: "Burned Amount"
+  profiles:
+    tab:
+      subtitle:
+        basicSetting: "Basic Setting"
+        experimentalFeature: "Experimental Feature"
+      basicSetting:
+        account: "Account Setting"
+        connectedProjects: "Connected Projects Setting"
+      experimentalFeature:
+        invitationSystem: "Invitation System"
+  will_paginate:
+    previous_label: "&#8592; Previous"
+    previous_aria_label: "Previous page"
+    next_label: "Next &#8594;"
+    next_aria_label: "Next page"
+    page_gap: "&hellip;"
+    container_aria_label: "Pagination"
+    page_aria_label: "Page %{page}"
+
+    page_entries_info:
+      single_page:
+        zero: "No %{model} found"
+        one: "Displaying 1 %{model}"
+        other: "Displaying all %{count} %{model}"
+      single_page_html:
+        zero: "No %{model} found"
+        one: "Displaying <b>1</b> %{model}"
+        other: "Displaying <b>all&nbsp;%{count}</b> %{model}"
+
+      multi_page: "Displaying %{model} %{from} - %{to} of %{count} in total"
+      multi_page_html: "Displaying %{model} <b>%{from}&nbsp;-&nbsp;%{to}</b> of <b>%{count}</b> in total"
+  tooltip:
+    title:
+      item_description: "Item Description"
+      item_from: "From"
+  rank:
+    title: "Rank"
+    description: "Leaderboard of recent on-chain profits for players."
+    list_title: "List of Rank"
+    table:
+      rank_number: "Rank"
+      name: "Name"
+      value: "Value"
+      default: "No Rank"
+  error:
+    not_found_instance: "Instance not found"
+  link:
+    tx_hash: "View on Explorer"
+  theme:
+    light: "Light Mode"
+    dark: "Dark Mode"
+  graph:
+    candlestick: "Candlestick"
+  order_modal:
+    title: "Accept Order"
+    take_amount: "Take Amount"
+    max_amount: "Max Amount: "
+    total_price: "Total Price"
+    show_calldata: "Calldata"
+    copy_calldata: "Copy Calldata"
+    confirm_info: "Confirm Order Info"
+    wallet_address: "Wallet Address"
+    connect_wallet: "Connect Wallet"
+    wallet_address_placeholder: "Please connect wallet"
+    send_tx: "Send Transaction"
+    cancel: "Cancel"
+    notice:
+      calldata_not_found: "Calldata not found"

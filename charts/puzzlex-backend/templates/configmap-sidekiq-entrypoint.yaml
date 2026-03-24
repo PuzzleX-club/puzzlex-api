@@ -1,0 +1,65 @@
+{{- if .Values.sidekiq.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "puzzlex-backend.fullname" . }}-sidekiq-entrypoint
+  labels:
+    {{- include "puzzlex-backend.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sidekiq
+data:
+  entrypoint.sh: |
+    #!/bin/sh
+    set -e
+
+    # 从 Pod 名称提取实例索引
+    INDEX=$(echo "$HOSTNAME" | grep -oE '[0-9]+$' || echo "0")
+    echo "[Sidekiq] Starting instance ${INDEX}..."
+    echo "[Sidekiq] Environment: RAILS_ENV=${RAILS_ENV}"
+    echo "[Sidekiq] Redis: ${REDIS_URL:-not_set}"
+    echo "[Sidekiq] Blockchain RPC: ${BLOCKCHAIN_RPC_URL:-not_set}"
+    echo "[Sidekiq] Chain ID: ${CHAIN_ID:-not_set}"
+
+    # 构建队列参数
+    # 格式: -q queue_name,weight (权重越高优先级越高)
+    # 队列隔离策略：Leader (INDEX=0) 只监听调度队列，Worker 监听工作队列
+    QUEUE_ARGS=""
+
+    if [ "$INDEX" = "0" ]; then
+      # Leader（INDEX=0）: 监听 scheduler + critical + log_collector
+      # 负责所有调度和索引任务（Scanner, Dispatcher, LogCollector 等）
+      echo "[Sidekiq] Leader mode (INDEX=0) - scheduler + critical + log_collector queues"
+      QUEUE_ARGS="-q scheduler,10 -q critical,5 -q log_collector,8"
+    else
+      # Worker（INDEX>=1）: 监听所有工作队列（不包括 scheduler 和 log_collector）
+      # 负责执行 Leader 分发的任务（MetadataFetchJob, broadcast, market_data 等）
+      # 注意: log_collector 需要 Leader only 执行，所以不在 Worker 队列中
+      echo "[Sidekiq] Worker mode (INDEX=$INDEX) - worker queues"
+      QUEUE_ARGS="-q critical,10"
+      QUEUE_ARGS="$QUEUE_ARGS -q metadata_fetch,5"
+      QUEUE_ARGS="$QUEUE_ARGS -q broadcast,5"
+      QUEUE_ARGS="$QUEUE_ARGS -q high_priority,5"
+      QUEUE_ARGS="$QUEUE_ARGS -q default,3"
+      QUEUE_ARGS="$QUEUE_ARGS -q mailers,2"
+      QUEUE_ARGS="$QUEUE_ARGS -q market_data,3"
+      QUEUE_ARGS="$QUEUE_ARGS -q events,3"
+      # 切片队列（每个 Worker 只监听自己的后缀）
+      QUEUE_ARGS="$QUEUE_ARGS -q order_matching_${INDEX},5"
+      QUEUE_ARGS="$QUEUE_ARGS -q overmatch_detection_${INDEX},3"
+      QUEUE_ARGS="$QUEUE_ARGS -q depth_broadcast_${INDEX},3"
+      QUEUE_ARGS="$QUEUE_ARGS -q ticker_broadcast_${INDEX},3"
+      QUEUE_ARGS="$QUEUE_ARGS -q kline_broadcast_${INDEX},3"
+      QUEUE_ARGS="$QUEUE_ARGS -q kline_generate_${INDEX},2"
+      QUEUE_ARGS="$QUEUE_ARGS -q market_aggregate_${INDEX},2"
+      QUEUE_ARGS="$QUEUE_ARGS -q market_summary_refresh_${INDEX},2"
+      QUEUE_ARGS="$QUEUE_ARGS -q market_summary_sync_${INDEX},1"
+      QUEUE_ARGS="$QUEUE_ARGS -q market_summary_ensure_${INDEX},1"
+    fi
+
+    echo "[Sidekiq] Instance ${INDEX} queue args: $QUEUE_ARGS"
+
+    # 启动 Sidekiq
+    exec bundle exec sidekiq \
+      -c ${SIDEKIQ_CONCURRENCY:-5} \
+      $QUEUE_ARGS \
+      -v
+{{- end }}

@@ -1,0 +1,146 @@
+{{- if .Values.sidekiq.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "puzzlex-backend.component.fullname" (dict "component" "sidekiq" "Values" .Values "Release" .Release "Chart" .Chart) }}
+  labels:
+    {{- include "puzzlex-backend.component.labels" (dict "component" "sidekiq" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 4 }}
+spec:
+  serviceName: {{ include "puzzlex-backend.component.fullname" (dict "component" "sidekiq" "Values" .Values "Release" .Release "Chart" .Chart) }}-headless
+  replicas: {{ .Values.sidekiq.replicaCount }}
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      {{- include "puzzlex-backend.component.selectorLabels" (dict "component" "sidekiq" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "puzzlex-backend.component.selectorLabels" (dict "component" "sidekiq" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.sidekiq.terminationGracePeriodSeconds | default 60 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "puzzlex-backend.serviceAccountName" . }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations: {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- end }}
+      {{- /* Init Container: 等待合约地址 ConfigMap 就绪 */}}
+      {{- if .Values.contractAddresses.waitForConfigMap }}
+      initContainers:
+        - name: wait-for-contracts
+          image: {{ .Values.contractAddresses.initImage | default "bitnami/kubectl:latest" }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for contract-addresses ConfigMap..."
+              until kubectl get configmap {{ .Values.contractAddresses.configMapName | default "contract-addresses" }} -n {{ .Release.Namespace }}; do
+                echo "ConfigMap not found, waiting..."
+                sleep 5
+              done
+              echo "ConfigMap found, proceeding with startup..."
+      {{- end }}
+      containers:
+        - name: sidekiq
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh", "/scripts/entrypoint.sh"]
+          {{- /* 从 ConfigMap 注入合约地址环境变量 */}}
+          {{- if .Values.contractAddresses.enabled }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.contractAddresses.configMapName | default "contract-addresses" }}
+                optional: {{ .Values.contractAddresses.optional | default false }}
+          {{- end }}
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: SIDEKIQ_CONCURRENCY
+              value: "{{ .Values.sidekiq.concurrency | default 5 }}"
+            # Election system env vars (rendered from .Values.sidekiq.election)
+            # 默认使用静态 Leader 模式 (INDEX=0 为 Leader)，设置 enabled=true 恢复动态选举
+            - name: SIDEKIQ_ELECTION_ENABLED
+              value: "{{ .Values.sidekiq.election.enabled | default false }}"
+            - name: SIDEKIQ_STATIC_LEADER_INDEX
+              value: "{{ .Values.sidekiq.election.staticLeaderIndex | default 0 }}"
+            - name: SIDEKIQ_ELECTION_HEARTBEAT_INTERVAL
+              value: "{{ .Values.sidekiq.election.heartbeatInterval | default 10 }}"
+            - name: SIDEKIQ_ELECTION_HEARTBEAT_JITTER
+              value: "{{ .Values.sidekiq.election.heartbeatJitter | default 2 }}"
+            - name: SIDEKIQ_ELECTION_TTL_SECONDS
+              value: "{{ .Values.sidekiq.election.ttlSeconds | default 60 }}"
+            - name: SIDEKIQ_ELECTION_MAX_FAILURES
+              value: "{{ .Values.sidekiq.election.maxConsecutiveFailures | default 5 }}"
+            # Watchdog env vars (rendered from .Values.sidekiq.election.watchdog)
+            {{- if .Values.sidekiq.election.watchdog }}
+            - name: SIDEKIQ_WATCHDOG_ENABLED
+              value: "{{ .Values.sidekiq.election.watchdog.enabled | default true }}"
+            - name: SIDEKIQ_WATCHDOG_CHECK_INTERVAL
+              value: "{{ .Values.sidekiq.election.watchdog.checkInterval | default 20 }}"
+            - name: SIDEKIQ_WATCHDOG_CHECK_JITTER
+              value: "{{ .Values.sidekiq.election.watchdog.checkJitter | default 3 }}"
+            - name: SIDEKIQ_WATCHDOG_ACQUIRE_JITTER
+              value: "{{ .Values.sidekiq.election.watchdog.acquireJitter | default 5 }}"
+            - name: SIDEKIQ_WATCHDOG_STALE_THRESHOLD
+              value: "{{ .Values.sidekiq.election.watchdog.staleThreshold | default 30 }}"
+            {{- end }}
+            # Price Token env vars (rendered from .Values.priceTokens - global config)
+            {{- if .Values.priceTokens }}
+            {{- range $i, $token := .Values.priceTokens.tokens }}
+            - name: PRICE_TOKEN_{{ $token.code }}_SYMBOL
+              value: {{ $token.symbol | quote }}
+            - name: PRICE_TOKEN_{{ $token.code }}_ADDRESS
+              value: {{ $token.address | quote }}
+            {{- end }}
+            {{- end }}
+            {{- $componentEnv := .Values.sidekiq.env }}
+            {{- $extraEnv := .Values.sidekiq.extraEnv }}
+            {{- include "puzzlex-backend.env" (dict "componentEnv" $componentEnv "extraEnv" $extraEnv "Values" .Values) | nindent 12 }}
+          volumeMounts:
+            - name: entrypoint
+              mountPath: /scripts
+          {{- if .Values.sidekiq.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.sidekiq.livenessProbe | nindent 12 }}
+          {{- else }}
+          livenessProbe:
+            exec:
+              command:
+                - "sh"
+                - "-c"
+                - "ps aux | grep '[s]idekiq' || exit 1"
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          {{- end }}
+          {{- if .Values.sidekiq.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.sidekiq.readinessProbe | nindent 12 }}
+          {{- else }}
+          readinessProbe:
+            exec:
+              command:
+                - "sh"
+                - "-c"
+                - "ps aux | grep '[s]idekiq' || exit 1"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          {{- end }}
+          resources:
+            {{- toYaml .Values.sidekiq.resources | nindent 12 }}
+      volumes:
+        - name: entrypoint
+          configMap:
+            name: {{ include "puzzlex-backend.fullname" . }}-sidekiq-entrypoint
+            defaultMode: 0755
+{{- end }}

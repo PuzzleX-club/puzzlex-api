@@ -1,0 +1,101 @@
+
+services:
+  # Rails Server - 主应用服务器
+  rails-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: puzzlex_rails_server
+    ports:
+      - "3000:3000"
+    environment:
+      RAILS_ENV: ${RAILS_ENV:-production}
+      # 数据库连接（通过环境变量配置）
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      RUN_DB_MIGRATION_ON_STARTUP: ${RUN_DB_MIGRATION_ON_STARTUP:-true}
+      RAILS_LOG_TO_STDOUT: "true"
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-}
+    volumes:
+      - rails_storage:/rails/storage
+      - rails_logs:/rails/log
+    restart: unless-stopped
+    networks:
+      - puzzlex_network
+    command: ["./bin/rails", "server", "-b", "0.0.0.0"]
+
+  # Sidekiq - 后台任务处理器
+  sidekiq:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: puzzlex_sidekiq
+    environment:
+      RAILS_ENV: ${RAILS_ENV:-production}
+      # 数据库连接（通过环境变量配置）
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      RUN_DB_MIGRATION_ON_STARTUP: ${RUN_DB_MIGRATION_ON_STARTUP:-false}
+      RAILS_LOG_TO_STDOUT: "true"
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-}
+    volumes:
+      - rails_storage:/rails/storage
+      - rails_logs:/rails/log
+    depends_on:
+      rails-server:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - puzzlex_network
+    command: ["bundle", "exec", "sidekiq"]
+
+  # Puma - Action Cable WebSocket 服务器
+  puma:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: puzzlex_puma
+    ports:
+      - "3001:3000"
+    environment:
+      RAILS_ENV: ${RAILS_ENV:-production}
+      # 数据库连接（通过环境变量配置）
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      RUN_DB_MIGRATION_ON_STARTUP: ${RUN_DB_MIGRATION_ON_STARTUP:-false}
+      RAILS_LOG_TO_STDOUT: "true"
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-}
+    volumes:
+      - rails_storage:/rails/storage
+      - rails_logs:/rails/log
+    depends_on:
+      rails-server:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - puzzlex_network
+    command: ["bundle", "exec", "puma"]
+
+  ## redis server
+  redis:
+    image: redis:7-alpine
+    container_name: puzzlex_redis
+    ports:
+      - "6380:6379"
+    restart: unless-stopped
+    networks:
+      - puzzlex_network
+    command: redis-server --appendonly yes
+
+volumes:
+  rails_storage:
+    driver: local
+  rails_logs:
+    driver: local
+
+networks:
+  puzzlex_network:
+    driver: bridge

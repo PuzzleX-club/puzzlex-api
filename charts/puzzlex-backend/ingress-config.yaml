@@ -1,0 +1,33 @@
+# === Nginx Ingress 配置（单 Ingress 双路径） ===
+web:
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: true
+    className: "nginx"  # 注意：是 nginx，不是 nginx-ingress
+    annotations:
+      kubernetes.io/ingress.class: "nginx"
+      # cert-manager 注解
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      cert-manager.io/issue-temporary-certificate: "true"  # 临时证书
+      # 通用配置
+      nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+      nginx.ingress.kubernetes.io/client-max-body-size: "50m"
+    hosts:
+      - host: api.puzzlex.club
+        paths:
+          - path: /
+            pathType: Prefix
+            service: web
+    tls:
+      - secretName: api-puzzlex-tls
+        hosts:
+          - api.puzzlex.club
+
+# === Cable Ingress 配置（禁用独立 Ingress） ===
+cable:
+  enabled: true  # Cable 服务保持启用
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: false  # 重要：禁用独立 Ingress，通过 web Ingress 的 /cable 路径访问

@@ -1,0 +1,88 @@
+{{- if .Values.web.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "puzzlex-backend.component.fullname" (dict "component" "web" "Values" .Values "Release" .Release "Chart" .Chart) }}
+  labels:
+    {{- include "puzzlex-backend.component.labels" (dict "component" "web" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 4 }}
+spec:
+  replicas: {{ .Values.web.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "puzzlex-backend.component.selectorLabels" (dict "component" "web" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "puzzlex-backend.component.selectorLabels" (dict "component" "web" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "puzzlex-backend.serviceAccountName" . }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations: {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- end }}
+      {{- /* Init Container: 等待合约地址 ConfigMap 就绪 */}}
+      {{- if .Values.contractAddresses.waitForConfigMap }}
+      initContainers:
+        - name: wait-for-contracts
+          image: {{ .Values.contractAddresses.initImage | default "bitnami/kubectl:latest" }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for contract-addresses ConfigMap..."
+              until kubectl get configmap {{ .Values.contractAddresses.configMapName | default "contract-addresses" }} -n {{ .Release.Namespace }}; do
+                echo "ConfigMap not found, waiting..."
+                sleep 5
+              done
+              echo "ConfigMap found, proceeding with startup..."
+      {{- end }}
+      containers:
+        - name: web
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.web.command }}
+          args:
+            {{- toYaml .Values.web.command | nindent 12 }}
+          {{- end }}
+          {{- /* 从 ConfigMap 注入合约地址环境变量 */}}
+          {{- if .Values.contractAddresses.enabled }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.contractAddresses.configMapName | default "contract-addresses" }}
+                optional: {{ .Values.contractAddresses.optional | default false }}
+          {{- end }}
+          env:
+            # Price Token env vars (rendered from .Values.priceTokens - global config)
+            {{- if .Values.priceTokens }}
+            {{- range $i, $token := .Values.priceTokens.tokens }}
+            - name: PRICE_TOKEN_{{ $token.code }}_SYMBOL
+              value: {{ $token.symbol | quote }}
+            - name: PRICE_TOKEN_{{ $token.code }}_ADDRESS
+              value: {{ $token.address | quote }}
+            {{- end }}
+            {{- end }}
+            {{- $componentEnv := .Values.web.env }}
+            {{- $extraEnv := .Values.web.extraEnv }}
+            {{- include "puzzlex-backend.env" (dict "componentEnv" $componentEnv "extraEnv" $extraEnv "Values" .Values) | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.web.containerPort }}
+              protocol: TCP
+          {{- if .Values.web.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.web.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.web.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.web.readinessProbe | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+{{- end }}
+

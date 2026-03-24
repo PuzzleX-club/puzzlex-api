@@ -1,0 +1,35 @@
+#!/bin/bash -e
+
+# Database migration control
+# Set RUN_DB_MIGRATION_ON_STARTUP=false to disable automatic migrations
+# In K8S, migrations should be handled by separate Jobs or Init Containers
+RUN_DB_MIGRATION_ON_STARTUP="${RUN_DB_MIGRATION_ON_STARTUP:-false}"
+
+# Detect if database migration is needed based on the command being executed
+# Rails server, Sidekiq, and Puma (for Action Cable) all require database access
+NEED_DB_MIGRATION=false
+
+# Check command type
+if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
+  # Rails server command
+  NEED_DB_MIGRATION=true
+elif [ "${1}" == "bundle" ] && [ "${2}" == "exec" ]; then
+  # Bundle exec commands (Sidekiq, Puma, etc.)
+  if [ "${3}" == "sidekiq" ] || [ "${3}" == "puma" ]; then
+    NEED_DB_MIGRATION=true
+  fi
+fi
+
+# Execute database migration if needed and enabled
+# In K8S production, set RUN_DB_MIGRATION_ON_STARTUP=false and use a separate Job
+# to run migrations before deploying new pods
+if [ "$NEED_DB_MIGRATION" = true ] && [ "$RUN_DB_MIGRATION_ON_STARTUP" = "true" ]; then
+  echo "Preparing database for service startup..."
+  ./bin/rails db:prepare
+elif [ "$NEED_DB_MIGRATION" = true ] && [ "$RUN_DB_MIGRATION_ON_STARTUP" != "true" ]; then
+  echo "Skipping database migration (RUN_DB_MIGRATION_ON_STARTUP=false)"
+  echo "Ensure database migrations are handled separately (e.g., via K8S Job)"
+fi
+
+# Execute the command passed to the container
+exec "${@}"

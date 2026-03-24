@@ -1,0 +1,30 @@
+[
+  {
+    "recipe_id": 1,
+    "enabled": true,
+    "translations": [
+      { "locale": "zh-CN", "name": "锻造铁剑", "description": "使用铁锭和木材锻造一把铁剑。" },
+      { "locale": "en", "name": "Forge Iron Sword", "description": "Forge an iron sword using iron ingots and wood." }
+    ],
+    "materials": [
+      { "item_id": 2, "quantity": 3 }
+    ],
+    "products": [
+      { "item_id": 1, "quantity": 1, "weight": 1 }
+    ]
+  },
+  {
+    "recipe_id": 2,
+    "enabled": true,
+    "translations": [
+      { "locale": "zh-CN", "name": "酿造治疗药水", "description": "将草药和水混合制成治疗药水。" },
+      { "locale": "en", "name": "Brew Healing Potion", "description": "Mix herbs and water to brew a healing potion." }
+    ],
+    "materials": [
+      { "item_id": 2, "quantity": 1 }
+    ],
+    "products": [
+      { "item_id": 3, "quantity": 2, "weight": 1 }
+    ]
+  }
+]

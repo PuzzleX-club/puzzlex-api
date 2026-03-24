@@ -1,0 +1,157 @@
+# contract-deployer values
+# 通用合约部署器配置
+
+# 镜像配置
+image:
+  repository: puzzlex/contract-deployer
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# 部署模式: job | deployment | sidecar
+# - job: 独立 Job 运行，一次性任务后退出
+# - deployment: 长期运行的 Deployment，支持 API 和监控
+# - sidecar: 作为 Pod 的 Sidecar 容器，适用于本地/测试环境
+mode: job
+
+# 目标网络配置
+network:
+  # RPC URL - 目标区块链 RPC 地址
+  # 本地 K8s: http://anvil-testnet:8546
+  # Monad: https://testnet-rpc.monad.xyz
+  rpcUrl: ""
+  # Chain ID
+  chainId: 31338
+  # 后端使用的 RPC URL (可选，用于 ConfigMap 中的 BLOCKCHAIN_RPC_URL)
+  # 如果不设置，默认使用 rpcUrl
+  # 本地 K8s 场景: 部署器使用 localhost，后端使用 K8s Service 名
+  backendRpcUrl: ""
+
+# 部署选项
+deployment:
+  # 只检查不部署
+  dryRun: false
+  # 等待 RPC 就绪 (Sidecar 模式)
+  waitForRpc: true
+  # 保持容器运行 (Sidecar 模式)
+  keepAlive: true
+
+# 合约部署开关
+contracts:
+  nicksFactory: true
+  allowedZoneManager: true
+  conduitController: true
+  seaport: true
+  lumiItemZone: true
+  testERC1155: true
+  testERC20: true
+
+# 私钥配置 (从 Secret 读取)
+secrets:
+  # Secret 名称
+  name: contract-deployer-keys
+  # 私钥 key
+  privateKeyKey: deployer-private-key
+  # 私钥值 (仅用于测试，生产环境应通过 Secret 注入)
+  # Anvil 标准私钥
+  privateKey: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
+# 输出配置
+output:
+  # runtime_contracts.json 输出路径
+  path: /data/runtime_contracts.json
+  # 是否创建 ConfigMap
+  createConfigMap: true
+  # ConfigMap 名称 (后端通过 envFrom 注入)
+  configMapName: contract-addresses
+
+# Job 配置 (mode=job 时生效)
+job:
+  # 重试次数
+  backoffLimit: 3
+  # 完成后保留时间 (秒)
+  ttlSecondsAfterFinished: 300
+  # 重启策略
+  restartPolicy: OnFailure
+
+# 资源配置
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+
+# Pod 注解
+podAnnotations: {}
+
+# Node 选择器
+nodeSelector: {}
+
+# 容忍度
+tolerations: []
+
+# 亲和性
+affinity: {}
+
+# ============================================
+# API 配置 (mode=deployment 时生效)
+# ============================================
+api:
+  # 是否启用 API 服务
+  enabled: true
+  # API 端口
+  port: 3001
+
+# Service 配置
+service:
+  type: ClusterIP
+
+# 健康检查配置
+healthCheck:
+  enabled: true
+  initialDelaySeconds: 60
+  readyInitialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# 持久化配置
+persistence:
+  enabled: false
+  existingClaim: ""
+
+# ============================================
+# 前端环境变量同步配置
+# 合约部署完成后，自动更新前端环境变量
+# 参考文档: docs/adr/ADR-075-frontend-env-sync.md
+#
+# 本地开发环境: frontendSync.enabled=false
+#   使用脚本同步: cd frontend && npm run env:sync:local
+#
+# GKE 环境: frontendSync.enabled=true, target=cloudflare
+#   通过 GitHub Actions 更新 Cloudflare Pages
+# ============================================
+frontendSync:
+  # 是否启用前端环境变量同步
+  # 本地环境设为 false，使用 npm run env:sync:local 手动同步
+  enabled: false
+
+  # 更新目标: cloudflare
+  # - cloudflare: 触发 GitHub Actions → Cloudflare Pages API
+  target: cloudflare
+
+  # cloudflare 模式配置
+  cloudflare:
+    # 目标环境: dev | prod (对应 GitHub Environment)
+    # 注意: 不带 gke- 前缀
+    env: ""
+    # GitHub 仓库 (用于 repository_dispatch)
+    githubRepo: "Leocufe/puzzlex-frontend"
+
+  # GitHub PAT (cloudflare 模式需要)
+  # 配置方式: 通过 existingSecret 引用 K8s Secret
+  github:
+    # 使用已有的 K8s Secret
+    existingSecret: ""
+    existingSecretKey: "pat-dispatch"

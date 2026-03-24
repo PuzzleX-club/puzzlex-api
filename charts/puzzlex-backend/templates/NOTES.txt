@@ -1,0 +1,32 @@
+1. Get the application URL by running these commands:
+{{- if .Values.web.ingress.enabled }}
+{{- range $host := .Values.web.ingress.hosts }}
+  {{- range .paths }}
+  http://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- if .Values.cable.enabled }}
+{{- if .Values.cable.ingress.enabled }}
+{{- range $host := .Values.cable.ingress.hosts }}
+  {{- range .paths }}
+  ws://{{ $host.host }}{{ .path }} (WebSocket)
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+2. Check the status of your deployments:
+   kubectl get deployments -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+3. Check the status of your pods:
+   kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+4. View logs for Web service:
+   kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=web --tail=100
+
+5. View logs for Cable service:
+   kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=cable --tail=100
+
+6. View logs for Sidekiq service:
+   kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=sidekiq --tail=100

@@ -1,0 +1,415 @@
+# Default values for puzzlex-backend.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global image configuration
+image:
+  repository: your-registry/puzzlex-backend
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# Image pull secrets (if using private registry)
+imagePullSecrets: []
+# - name: regcred
+
+# Service account configuration
+serviceAccount:
+  create: true
+  name: ""
+
+# ============================================
+# API Path ConfigMap (前端环境变量同步)
+# ============================================
+# 提供 API/WebSocket 路径配置，供前端同步脚本使用
+# 参考文档: docs/adr/ADR-075-frontend-env-sync.md
+apiConfig:
+  # 是否创建 ConfigMap
+  enabled: true
+  # ConfigMap 名称
+  configMapName: "backend-api-config"
+  # API 路径配置
+  apiPath: "/api"
+  cablePath: "/cable"
+  wsPath: "/ws"
+  # Base URL (GKE 环境配置，本地环境由同步脚本硬编码)
+  apiBaseUrl: ""       # 如: https://api.puzzlex.club
+  wsBaseUrl: ""        # 如: wss://api.puzzlex.club
+  frontendUrl: ""      # 如: https://puzzlex.club
+
+# ============================================
+# Contract Addresses ConfigMap Integration
+# ============================================
+# 合约地址通过 ConfigMap 注入，由 contract-deployer 创建
+contractAddresses:
+  # 是否启用 ConfigMap 注入
+  enabled: false
+  # ConfigMap 名称
+  configMapName: "contract-addresses"
+  # ConfigMap 不存在时是否允许启动 (可选)
+  optional: false
+  # 是否等待 ConfigMap 就绪 (使用 Init Container)
+  waitForConfigMap: false
+  # Init Container 镜像
+  initImage: "bitnami/kubectl:latest"
+
+# ============================================
+# Web Service (Puma HTTP/API)
+# ============================================
+web:
+  enabled: true
+  replicaCount: 1
+  ingress:
+    enabled: true
+    hosts:
+      - host: puzzlex.club
+        paths:
+          - path: /
+            pathType: Prefix
+            service: web
+  service:
+    type: ClusterIP
+    port: 3000
+  
+  containerPort: 3000
+  
+  # Command to start Rails server
+  command:
+    - "bundle"
+    - "exec"
+    - "rails"
+    - "server"
+    - "-b"
+    - "0.0.0.0"
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Environment variables
+  env:
+    - name: RAILS_ENV
+      value: "production"
+    - name: BUNDLE_PATH
+      value: "/usr/local/bundle"
+    - name: BUNDLE_DEPLOYMENT
+      value: "1"
+    - name: RAILS_MAX_THREADS
+      value: "16"
+    - name: RAILS_MIN_THREADS
+      value: "8"
+    - name: WEB_CONCURRENCY
+      value: "2"
+    - name: USE_TCP_PORT
+      value: "true"
+    - name: PORT
+      value: "3000"
+
+  # Extra environment variables (for environment-specific overrides)
+  extraEnv: []
+
+  # Health check
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: http
+      scheme: HTTP
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: http
+      scheme: HTTP 
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# ============================================
+# Cable Service (Action Cable WebSocket)
+# ============================================
+# 注意：Cable 已经集成在 web 服务中（通过 routes.rb 的 mount ActionCable.server）
+# 但为了在 K8S 中为 WebSocket 配置独立的 Ingress（需要特殊的 annotations），
+# 保留独立的 cable Service 和 Ingress，但它们都指向 web Deployment
+cable:
+  # 启用 cable Service 和 Ingress（用于 WebSocket 路由配置）
+  enabled: true
+  # 是否创建独立的 cable Deployment（默认 false，因为 Cable 已集成在 web 服务中）
+  # 如果设置为 true，会创建独立的 cable Deployment 用于资源隔离
+  createDeployment: false
+  replicaCount: 1
+  # Cable Ingress 配置（WebSocket 需要特殊的 Ingress annotations）
+  ingress:
+    enabled: true
+    annotations: {}
+    hosts:
+      - host: puzzlex.club
+        paths:
+          - path: /cable
+            pathType: Prefix
+            service: cable
+  service:
+    type: ClusterIP
+    port: 3000
+  containerPort: 3000
+  # Command to start Action Cable server
+  command:
+    - "bundle"
+    - "exec"
+    - "puma"
+    - "-C"
+    - "config/puma.cable.rb"
+    - "cable/config.ru"
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  # Environment variables
+  env:
+    - name: RAILS_ENV
+      value: "production"
+    - name: BUNDLE_PATH
+      value: "/usr/local/bundle"
+    - name: BUNDLE_DEPLOYMENT
+      value: "1"
+    - name: CABLE_MAX_THREADS
+      value: "32"
+    - name: CABLE_MIN_THREADS
+      value: "4"
+    - name: CABLE_WEB_CONCURRENCY
+      value: "2"
+    # CABLE_USE_TCP_PORT: 仅在 createDeployment=true 时生效
+    # 当 createDeployment=false 时，Cable 通过 web 服务运行，使用 web 的 USE_TCP_PORT
+    - name: CABLE_USE_TCP_PORT
+      value: "true"
+    - name: USE_TCP_PORT
+      value: "true"
+    - name: PORT
+      value: "3000"
+
+  # Extra environment variables (for environment-specific overrides)
+  extraEnv: []
+
+  # Health check (WebSocket doesn't have traditional health endpoint)
+  livenessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  readinessProbe:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# ============================================
+# Sidekiq Service (Background Jobs)
+# 使用 StatefulSet 部署，支持市场ID切片多实例架构
+# ============================================
+sidekiq:
+  enabled: true
+  replicaCount: 2  # 推荐至少2个实例以支持选举和切片
+  concurrency: 5   # 每个实例的并发线程数
+  terminationGracePeriodSeconds: 60  # 优雅关闭等待时间
+
+  # 选举系统配置
+  election:
+    enabled: false  # 默认使用静态 Leader 模式 (INDEX=0)，设为 true 恢复动态选举
+    heartbeatInterval: 10  # 心跳间隔（秒）
+    heartbeatJitter: 2     # 心跳抖动范围（秒）
+    ttlSeconds: 60         # 锁TTL（秒）- 从35提升到60
+    maxConsecutiveFailures: 5  # 最大连续失败次数 - 从3提升到5
+
+    # Watchdog 守护线程配置
+    watchdog:
+      enabled: true            # 是否启用 Watchdog
+      checkInterval: 20        # 检查间隔（秒）
+      checkJitter: 3           # 检查抖动（秒）
+      acquireJitter: 5         # 抢锁前抖动（秒）- 防多实例风暴
+      staleThreshold: 30       # 心跳卡死阈值（秒）
+
+  # 注意：命令已移至 ConfigMap entrypoint.sh
+  # 启动脚本会根据 Pod 索引动态配置切片队列
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+  # Environment variables
+  env:
+    - name: RAILS_ENV
+      value: "production"
+    - name: BUNDLE_PATH
+      value: "/usr/local/bundle"
+    - name: BUNDLE_DEPLOYMENT
+      value: "1"
+
+    # 注意：选举系统环境变量已移至 sidekiq.election 配置块
+    # 在 templates/statefulset-sidekiq.yaml 中渲染
+
+    # Metadata Scanner 队列感知配置
+    # 当 blockchain 队列积压超过此阈值时，跳过扫描
+    - name: METADATA_SCANNER_QUEUE_THRESHOLD
+      value: "500"
+
+    # Catalog provider — configure via CATALOG_* env vars
+    # See .env.example for available options.
+
+    # LogCollector 限速配置
+    # 参考: ADR-062 统一链上日志采集与Handler分发管道
+    - name: LOG_COLLECTOR_RPS
+      value: "5"  # 每秒最大请求数
+    - name: LOG_COLLECTOR_ERROR_BACKOFF_MAX
+      value: "30"  # 最大退避时间（秒）
+    - name: LOG_COLLECTOR_MAX_CONSECUTIVE_FAILURES
+      value: "10"  # 最大连续失败次数，达到后跳过当前 subscription
+    - name: LOG_COLLECTOR_CATCHUP_THRESHOLD
+      value: "1000"  # 落后区块数阈值，超过进入追赶模式
+    - name: LOG_COLLECTOR_CATCHUP_RPS
+      value: "10"  # 追赶模式 RPS
+
+  # Extra environment variables (for environment-specific overrides)
+  extraEnv: []
+
+  # Health check - 检查 Sidekiq Redis 心跳
+  # 原因：bundle exec rails runner 需要加载完整 Rails 环境（30s+）
+  # 使用 redis-cli 直接读取 Sidekiq sharding 心跳键，验证进程是否活跃
+  livenessProbe:
+    exec:
+      command:
+        - "sh"
+        - "-c"
+        - |
+          # 检查进程是否存在
+          ps aux | grep -q '[s]idekiq' || exit 1
+          # 使用 redis-cli -u 直接连接 REDIS_URL，并检查 sharding 心跳键
+          redis-cli -u "$REDIS_URL" --scan | grep -q 'sidekiq:sharding:instances' || exit 1
+    initialDelaySeconds: 90
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    exec:
+      command:
+        - "sh"
+        - "-c"
+        - |
+          # 检查进程是否存在
+          ps aux | grep -q '[s]idekiq' || exit 1
+          # 使用 redis-cli -u 直接连接 REDIS_URL，并检查 sharding 心跳键
+          redis-cli -u "$REDIS_URL" --scan | grep -q 'sidekiq:sharding:instances' || exit 1
+    initialDelaySeconds: 45
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # 自动扩缩容配置
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    # targetMemoryUtilizationPercentage: 80
+    # 队列深度指标（需要 prometheus-adapter）
+    # queueDepthMetric:
+    #   enabled: false
+    #   targetAverageValue: "100"
+
+
+
+# ============================================
+# Common Environment Variables
+# ============================================
+# Base common env vars (should NOT be overridden in environment files)
+commonEnv:
+  - name: DATABASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: puzzlex-secrets
+        key: puzzlex-database-url
+  - name: REDIS_URL
+    valueFrom:
+      secretKeyRef:
+        name: puzzlex-secrets
+        key: redis-url
+  - name: AUTH_JWT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: puzzlex-secrets
+        key: auth-jwt-secret
+  - name: SECRET_KEY_BASE
+    valueFrom:
+      secretKeyRef:
+        name: puzzlex-secrets
+        key: secret-key-base
+  # ============================================
+  # Admin Feature Flag (默认禁用)
+  # 交易所后端: false → Admin 路由不注册
+  # 管理后端: 在 values-gke-admin.yaml 中覆盖为 true
+  # 参考设计: docs/plans/precious-tinkering-wave.md
+  # ============================================
+  - name: ENABLE_ADMIN_FEATURES
+    value: "false"
+
+# Extra common env vars for environment-specific overrides
+# Use this in values-{env}.yaml to add common env vars without replacing commonEnv
+# Priority: commonEnv < commonEnvExtra < componentEnv < extraEnv
+commonEnvExtra: []
+
+# ============================================
+# Price Token 配置 (云原生 - 动态代币映射)
+# 用于解析 marketId 后两位到代币信息
+# 全局配置，所有组件共享
+# ============================================
+priceTokens:
+  tokens:
+    - code: "00"
+      symbol: "ETH"
+      address: "0x0000000000000000000000000000000000000000"  # 原生代币
+    - code: "01"
+      symbol: "TT"
+      address: "0x0d127caD283ecB85cA93d9C748c87682E8c969A0"  # ERC20 代币地址（各环境需覆盖）
+
+# ============================================
+# Pod Disruption Budget
+# ============================================
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1  # or use maxUnavailable: 1
+
+# ============================================
+# Horizontal Pod Autoscaler
+# ============================================
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# ============================================
+# External Database Connection (由 Helmfile 管理)
+# 数据库服务由 Bitnami Charts 独立部署，通过 Helmfile 编排
+# 后端只需配置连接信息（通过 puzzlex-secrets）
+# ============================================
+# 数据库连接通过 commonEnv 中的 SECRET 注入：
+#   - DATABASE_URL: PostgreSQL 主数据库

@@ -1,0 +1,33 @@
+# PostgreSQL database configuration
+# Using single PostgreSQL database for all environments
+#
+<%
+def resolved_database_url(default_url)
+  raw_url = ENV["DATABASE_URL"]
+  return default_url if raw_url.nil? || raw_url.empty?
+
+  begin
+    URI.parse(raw_url)
+    raw_url
+  rescue URI::InvalidURIError
+    default_url
+  end
+end
+%>
+
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  url: <%= resolved_database_url("postgresql://postgres:123456@127.0.0.1:5433/dev_db") %>
+
+test:
+  <<: *default
+  url: <%= resolved_database_url("postgresql://postgres:123456@127.0.0.1:5434/test_db") %>
+
+production:
+  <<: *default
+  url: <%= resolved_database_url("postgresql://postgres:123456@127.0.0.1:5432/production_db") %>

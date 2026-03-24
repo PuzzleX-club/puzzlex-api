@@ -1,0 +1,32 @@
+[
+  {
+    "token_id": "1048833",
+    "name": "Iron Sword #1",
+    "description": "A common iron sword suitable for novice adventurers.",
+    "image": "https://example.com/metadata/1048833.png",
+    "attributes": [
+      { "trait_type": "Quality", "value": "Common" },
+      { "trait_type": "WealthValue", "value": "100", "display_type": "number" }
+    ]
+  },
+  {
+    "token_id": "1048834",
+    "name": "Iron Sword #2",
+    "description": "A sturdy iron sword with minor enchantments.",
+    "image": "https://example.com/metadata/1048834.png",
+    "attributes": [
+      { "trait_type": "Quality", "value": "Uncommon" },
+      { "trait_type": "WealthValue", "value": "250", "display_type": "number" }
+    ]
+  },
+  {
+    "token_id": "2097409",
+    "name": "Wood Bundle #1",
+    "description": "A bundle of common wood.",
+    "image": "https://example.com/metadata/2097409.png",
+    "attributes": [
+      { "trait_type": "Quality", "value": "Common" },
+      { "trait_type": "WealthValue", "value": "10", "display_type": "number" }
+    ]
+  }
+]

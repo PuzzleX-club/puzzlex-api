@@ -1,0 +1,34 @@
+{{- if .Values.contractDeployer.enabled }}
+# Role for contract-deployer to create/update ConfigMaps
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "anvil-testnet.fullname" . }}-contract-deployer
+  labels:
+    {{- include "anvil-testnet.labels" . | nindent 4 }}
+rules:
+  # Allow creating/updating the contract-addresses ConfigMap
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["create", "update", "patch", "get", "list"]
+  # Allow checking permissions
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["selfsubjectaccessreviews"]
+    verbs: ["create"]
+---
+# RoleBinding to associate ServiceAccount with Role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "anvil-testnet.fullname" . }}-contract-deployer
+  labels:
+    {{- include "anvil-testnet.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "anvil-testnet.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "anvil-testnet.fullname" . }}-contract-deployer
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

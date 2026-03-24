@@ -1,0 +1,334 @@
+zh-CN:
+  time:
+    formats:
+      long: "%Y年%m月%d日 %H:%M:%S"         # 长格式，包含年、月、日、小时和分钟
+      short: "%m月%d日 %H:%M"           # 短格式，不包含年
+      only_date: "%Y年%m月%d日"         # 只显示日期
+      only_time: "%H:%M"               # 只显示时间
+      full: "%Y年%m月%d日 %A %H:%M"     # 完整格式，包含星期
+      concise: "%y/%m/%d %H:%M"        # 简洁格式，使用斜线分隔日期
+      default: "%Y年%m月%d日 %H:%M"     # 默认格式
+    date:
+      formats:
+        default: "%Y年%m月%d日"           # 默认日期格式
+        short: "%m/%d"                   # 短日期格式
+        long: "%Y年%m月%d日"              # 长日期格式
+        iso8601: "%Y-%m-%dT%H:%M:%S%z"   # ISO 8601 格式
+  date:
+    formats:
+      default: "%年-%月-%日"
+      short: "%m月%d日"
+      long: "%Y年%m月%d日"
+    order:
+      - :year
+      - :month
+      - :day
+    prompts:
+      year: "选择年份"
+      month: "选择月份"
+      day: "选择日"
+    abbr_day_names:
+      - 日
+      - 一
+      - 二
+      - 三
+      - 四
+      - 五
+      - 六
+    day_names:
+      - 星期日
+      - 星期一
+      - 星期二
+      - 星期三
+      - 星期四
+      - 星期五
+      - 星期六
+    abbr_month_names:
+      -
+      - 1月
+      - 2月
+      - 3月
+      - 4月
+      - 5月
+      - 6月
+      - 7月
+      - 8月
+      - 9月
+      - 10月
+      - 11月
+      - 12月
+    month_names:
+      -
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+      - 12
+  datetime:
+    distance_in_words:
+      x_minutes:
+        one: "1 分钟"
+        other: "%{count} 分钟"
+      about_x_hours:
+        one: "大约 1 小时"
+        other: "大约 %{count} 小时"
+      x_days:
+        one: "1 天"
+        other: "%{count} 天"
+  navigation:
+    home: "首页"
+    about: "关于"
+    item: "物品信息"
+    list_of_product: "物品列表"
+    list_of_instance: "实例列表"
+    transactions: "交易记录"
+    orders: "订单"
+    monster: "怪物信息"
+    backpack: "我的背包"
+    login: "登录"
+    logout: "登出"
+    account: "账户"
+    signup: "注册"
+    profile: "个人资料"
+    setting: "设置"
+    feedback: "反馈"
+    doc: "使用指南"
+  meta_data:
+    title: "PuzzleX"
+    description: "链上数据是公开的、混杂的，PuzzleX致力于拆解并整合这些信息。"
+    keywords: "PuzzleX, Monad, NFT, Game"
+    lang: "zh-CN"
+  table_header:
+    id: "编号"
+    icon: "图标"
+    lvl: "等级"
+    specializations: "职业"
+    classifications: "类别"
+    price_floor: "实时地板价"
+    operations: "操作"
+    name: "名称"
+    description: "描述"
+    created_at: "创建时间"
+    updated_at: "更新时间"
+    actions: "操作"
+    instance_id: "实例编号"
+    type: "类型"
+    amount: "数量"
+    price: "价格"
+    time: "时间"
+    product_and_prob: "产物及概率"
+    hp: "生命值"
+    attack: "攻击力"
+    defense: "防御力"
+    is_raid: "是否副本"
+    trait: "属性"
+    value: "数值"
+    probability: "概率"
+    supply: "链上存量"
+    produce: "链上产出"
+    consume: "链上消耗"
+    not_found: "暂无数据"
+    sync_block: "同步区块:"
+    order_status: "订单状态"
+    order_price: "订单价格"
+    order_id: "订单编号"
+    material: "材料"
+    hhi: "HHI集中度指数"
+    rank_number: "排名"
+    player_hash: "玩家标志"
+    player_revenue: "销售额"
+    player_sale_count: "销售次数"
+    player_cost: "消费额"
+    player_cost_count: "消费次数"
+    player_net_profit: "净利润"
+    tx_hash: "交易哈希"
+    market: "市场"
+  paginate:
+    previous: "上一页"
+    next: "下一页"
+    first: "首页"
+    last: "尾页"
+    truncate: "..."
+  selector:
+    name_contains: "名称包含"
+    submit: "搜索"
+    clear_filter: "清除条件"
+    start_date: "起始日期"
+    end_date: "终止日期"
+    order_open: "有效"
+    order_closed: "失效"
+    order_sold: "已售罄"
+    order_cancelled: "已撤单"
+    specialization_agriculture: "农业"
+    specialization_battle: "战斗"
+    specialization_gathering: "采集"
+    classification_special_material: "特殊材料"
+    classification_material: "材料"
+    classification_equipment: "装备"
+    classification_consumable: "消耗品"
+    classification_material_synthesis: "材料合成物"
+    classification_pet_egg: "宠物蛋"
+    classification_placeable: "放置物"
+    classification_task_ticket: "任务票"
+    classification_totem: "图腾"
+    buyer_address: "买方地址"
+    seller_address: "卖方地址"
+    any: "任意"
+  description:
+    ribbon: "描述"
+    goto_market: "前往市场"
+  recipes:
+    title: "配方详情"
+    ribbon: "配方"
+    as_product: "作为产品"
+    as_Material: "作为材料"
+    purchase_price: "购买价格"
+    synthesis_price: "制作价格"
+    all_raw_tab: "所有原材料"
+    layer_tab: "第"
+    craft_materials_tab: "层制作所需材料"
+  monster:
+    show_title: "怪物详情"
+  transactions:
+    title: "交易记录"
+    ribbon: "交易记录"
+    list_title: "交易记录列表"
+    table_tab_history: "历史交易"
+    table_tab_open: "实时订单"
+    instance_transaction_card_title: "历史交易：实例%{name}"
+    item_transaction_card_title: "历史交易：%{name}"
+    no_transaction: "暂无交易记录。"
+  orders:
+    list_title: "订单列表"
+    detail:
+      title: "订单详情"
+      detail_card_ribbon: "订单情况"
+      order_detail_card_title: "订单情况"
+      seller: "卖方"
+      expired_at: "过期时间"
+    matches:
+      title: "成交情况"
+      matches_card_ribbon: "成交情况"
+      buyer: "买方"
+      amount: "成交数量"
+      price: "成交单价"
+    table_tab_open: "实时订单"
+    amount: "挂单总量"
+    available_amount: "剩余数量"
+    update_time: "更新时间"
+    instance_order_card_title: "实时订单：实例%{name}"
+    item_order_card_title: "实时订单：%{name}"
+    no_instance_order: "暂无该实例有效订单。"
+    no_item_order: "暂无该物品有效订单。"
+    instance_detail: "实例详情"
+  items:
+    show_title: "物品详情"
+    list_title: "物品列表"
+  instances:
+    show_title: "实例详情"
+    list_title: "实例列表"
+    instance_traits: "实例属性"
+    ft_traits: "同质属性"
+    nft_traits: "非同质属性"
+    gs_score: "装备评分"
+  players:
+    show_title: "玩家详情"
+    list_title: "玩家列表"
+    equipments:
+      show_title: "玩家可装备的最高级别装备"
+      list_title: "装备列表"
+      battle: "战斗"
+      agriculture: "农业"
+      gathering: "采集"
+      table:
+        name: "名称"
+        level: "等级"
+        value: "数量"
+        default: "无装备"
+        classification: "部位"
+    balance:
+      show_title: "余额详情"
+      list_title: "余额列表"
+      table:
+        name: "名称"
+        instance: "实例"
+        balance: "余额"
+        default: "无余额"
+        mintamount: "历史产出数量"
+        transferredInAmount: "历史转入数量"
+        transferredOutAmount: "历史转出数量"
+        burnedAmount: "历史消耗数量"
+  profiles:
+    tab:
+      subtitle:
+        basicSetting: "基本设置"
+        experimentalFeature: "实验性功能"
+      basicSetting:
+        account: "账户设置"
+        connectedProjects: "关联项目设置"
+      experimentalFeature:
+        invitationSystem: "邀请系统"
+  will_paginate:
+    previous_label: "&#8592; 上一页"
+    previous_aria_label: "上一页"
+    next_label: "下一页 &#8594;"
+    next_aria_label: "下一页"
+    page_gap: "&hellip;"
+    container_aria_label: "分页"
+    page_aria_label: "第 %{page} 页"
+    page_entries_info:
+      single_page:
+        zero: "未找到任何 %{model}"
+        one: "显示 1 个 %{model}"
+        other: "显示所有 %{count} 个 %{model}"
+      single_page_html:
+        zero: "未找到任何 %{model}"
+        one: "显示 <b>1</b> 个 %{model}"
+        other: "显示 <b>所有&nbsp;%{count}</b> 个 %{model}"
+      multi_page: "显示 %{model} %{from} - %{to} 共 %{count} 条"
+      multi_page_html: "显示 %{model} <b>%{from}&nbsp;-&nbsp;%{to}</b> 共 <b>%{count}</b> 条"
+  tooltip:
+    title:
+      item_description: "物品描述"
+      item_from: "获取途径"
+      instance_id: "实例编号"
+  rank:
+    title: "排行榜"
+    description: "玩家近期链上盈利情况排行榜。"
+    list_title: "排行榜"
+    table:
+      rank_number: "排名"
+      name: "名称"
+      value: "数值"
+      default: "暂无数据"
+  error:
+    not_found_instance: "未收录实例"
+  link:
+    tx_hash: "前往浏览器"
+  theme:
+    light: "明亮模式"
+    dark: "暗黑模式"
+  graph:
+    candlestick: "K线图"
+  order_modal:
+    title: "接受订单"
+    take_amount: "接受数量"
+    max_amount: "最大可接受数量: "
+    total_price: "总价"
+    show_calldata: "待签名合约数据"
+    copy_calldata: "复制合约数据"
+    confirm_info: "确认订单信息"
+    wallet_address: "钱包地址"
+    connect_wallet: "连接钱包"
+    wallet_address_placeholder: "请链接钱包"
+    send_tx: "发送交易"
+    cancel: "取消"
+    notice:
+      calldata_not_found: "无法获取到合约数据"

@@ -1,0 +1,14 @@
+apiVersion: v2
+name: anvil-testnet
+description: Anvil Ethereum testnet for PuzzleX local K8s development
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - ethereum
+  - testnet
+  - anvil
+  - foundry
+  - blockchain
+maintainers:
+  - name: PuzzleX Team

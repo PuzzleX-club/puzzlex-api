@@ -1,0 +1,26 @@
+# Anvil Testnet - 本地开发环境配置
+# 特点: 启用持久化，合约部署由独立 Deployment 处理
+
+# 持久化开启
+persistence:
+  enabled: true
+  storageClass: ""  # 使用默认 StorageClass
+  size: 2Gi
+
+# 合约部署 Sidecar 配置
+# 本地环境使用独立的 contract-deployer Deployment，禁用 Sidecar
+contractDeployer:
+  enabled: false  # 禁用 Sidecar，使用独立 Deployment
+
+# 部署策略
+strategy:
+  type: Recreate
+
+# 资源限制 (本地开发可适当增加)
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 200m
+    memory: 512Mi

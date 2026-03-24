@@ -1,0 +1,24 @@
+# Anvil Testnet - 测试环境配置
+# 特点: 无持久化，每次重启自动部署合约
+
+# 持久化关闭 (使用 emptyDir)
+persistence:
+  enabled: false
+
+# 合约部署启用
+contractDeployer:
+  enabled: true
+  idempotent: false  # 测试环境每次都重新部署
+
+# 部署策略
+strategy:
+  type: Recreate
+
+# 资源限制 (测试环境较小)
+resources:
+  limits:
+    cpu: 500m
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi

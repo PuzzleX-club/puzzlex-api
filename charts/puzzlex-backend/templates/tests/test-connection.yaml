@@ -1,0 +1,17 @@
+{{- if .Values.web.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "puzzlex-backend.component.fullname" (dict "component" "web" "Values" .Values "Release" .Release "Chart" .Chart) }}-test-connection"
+  labels:
+    {{- include "puzzlex-backend.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args:  ['{{ include "puzzlex-backend.component.fullname" (dict "component" "web" "Values" .Values "Release" .Release "Chart" .Chart) }}:{{ .Values.web.service.port }}/health']
+  restartPolicy: Never
+{{- end }}

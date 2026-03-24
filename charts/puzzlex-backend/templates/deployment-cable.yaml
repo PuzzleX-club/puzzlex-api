@@ -1,0 +1,56 @@
+{{- if and .Values.cable.enabled .Values.cable.createDeployment }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "puzzlex-backend.component.fullname" (dict "component" "cable" "Values" .Values "Release" .Release "Chart" .Chart) }}
+  labels:
+    {{- include "puzzlex-backend.component.labels" (dict "component" "cable" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 4 }}
+spec:
+  replicas: {{ .Values.cable.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "puzzlex-backend.component.selectorLabels" (dict "component" "cable" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "puzzlex-backend.component.selectorLabels" (dict "component" "cable" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "puzzlex-backend.serviceAccountName" . }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations: {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: cable
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.cable.command }}
+          args:
+            {{- toYaml .Values.cable.command | nindent 12 }}
+          {{- end }}
+          env:
+            {{- $componentEnv := .Values.cable.env }}
+            {{- $extraEnv := .Values.cable.extraEnv }}
+            {{- include "puzzlex-backend.env" (dict "componentEnv" $componentEnv "extraEnv" $extraEnv "Values" .Values) | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.cable.containerPort }}
+              protocol: TCP
+          {{- if .Values.cable.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.cable.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.cable.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.cable.readinessProbe | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.cable.resources | nindent 12 }}
+{{- end }}
+

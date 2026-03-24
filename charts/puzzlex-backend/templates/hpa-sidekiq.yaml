@@ -1,0 +1,43 @@
+{{- if and .Values.sidekiq.enabled .Values.sidekiq.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "puzzlex-backend.component.fullname" (dict "component" "sidekiq" "Values" .Values "Release" .Release "Chart" .Chart) }}-hpa
+  labels:
+    {{- include "puzzlex-backend.component.labels" (dict "component" "sidekiq" "Values" .Values "Release" .Release "Chart" .Chart) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: {{ include "puzzlex-backend.component.fullname" (dict "component" "sidekiq" "Values" .Values "Release" .Release "Chart" .Chart) }}
+  minReplicas: {{ .Values.sidekiq.autoscaling.minReplicas | default 2 }}
+  maxReplicas: {{ .Values.sidekiq.autoscaling.maxReplicas | default 10 }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.sidekiq.autoscaling.targetCPUUtilizationPercentage | default 70 }}
+  {{- if .Values.sidekiq.autoscaling.targetMemoryUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.sidekiq.autoscaling.targetMemoryUtilizationPercentage }}
+  {{- end }}
+  {{- /* 队列深度指标（需要 prometheus-adapter 和 sidekiq_prometheus）*/}}
+  {{- if and .Values.sidekiq.autoscaling.queueDepthMetric .Values.sidekiq.autoscaling.queueDepthMetric.enabled }}
+  - type: External
+    external:
+      metric:
+        name: sidekiq_queue_size
+        selector:
+          matchLabels:
+            queue: "order_matching"
+      target:
+        type: AverageValue
+        averageValue: {{ .Values.sidekiq.autoscaling.queueDepthMetric.targetAverageValue | default "100" | quote }}
+  {{- end }}
+{{- end }}

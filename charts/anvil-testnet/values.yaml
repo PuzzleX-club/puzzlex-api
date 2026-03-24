@@ -1,0 +1,139 @@
+# Anvil Testnet Helm Chart - 基础配置
+# 环境特定配置请使用 values-test.yaml 或 values-local.yaml 覆盖
+
+# 镜像配置
+image:
+  repository: ghcr.io/foundry-rs/foundry
+  tag: "latest"  # 建议生产环境锁定版本，如 "nightly-2024-01-01"
+  pullPolicy: IfNotPresent
+
+# 副本数 (Anvil 单实例运行)
+replicaCount: 1
+
+# 部署策略
+strategy:
+  type: Recreate  # Anvil 不支持滚动更新，必须 Recreate
+
+# Anvil 配置
+anvil:
+  # 链 ID (与本地测试环境保持一致)
+  chainId: 31338
+  # 预置账户私钥 (测试网络标准私钥，勿用于生产)
+  privateKey: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+  # 区块时间 (秒)，0 表示按需出块
+  blockTime: 0
+  # Gas 限制
+  gasLimit: 30000000
+  # 初始余额 (ETH)
+  balance: 10000
+  # 账户数量
+  accounts: 10
+  # 端口 (与本地测试环境保持一致)
+  port: 8546
+  # 主机绑定
+  host: "0.0.0.0"
+
+# 持久化配置
+persistence:
+  # 是否启用持久化
+  enabled: false
+  # 存储类 (空字符串使用默认)
+  storageClass: ""
+  # 存储大小
+  size: 1Gi
+  # 访问模式
+  accessModes:
+    - ReadWriteOnce
+
+# 合约部署配置 (Sidecar 模式 - 已废弃)
+# 注意: 本地环境现在使用独立的 contract-deployer Deployment
+# Sidecar 模式仅作为 fallback 保留
+contractDeployer:
+  # 是否启用合约部署 Sidecar (默认禁用，使用独立 Deployment)
+  enabled: false
+  # 部署器镜像
+  image:
+    repository: puzzlex/contract-deployer
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  # 只检查不部署 (dry-run)
+  dryRun: false
+  # 幂等检查：如果合约已存在则跳过部署
+  idempotent: true
+  # 部署超时 (秒)
+  timeout: 300
+  # ConfigMap 名称 (用于后端配置注入)
+  configMapName: "contract-addresses"
+
+# Service 配置
+service:
+  type: ClusterIP
+  port: 8546
+  targetPort: 8546
+
+# Ingress 配置 (HTTPS 访问)
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-passthrough: "false"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+  hosts:
+    - host: anvil.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: anvil-tls
+      hosts:
+        - anvil.local
+
+# TLS 证书配置
+tls:
+  # 是否自动生成自签名证书
+  generateSelfSigned: true
+  # 证书有效期 (天)
+  validityDays: 365
+  # 或使用已存在的 Secret
+  existingSecret: ""
+
+# 资源限制
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+# 健康检查 (使用 TCP socket，Anvil 不响应 HTTP GET)
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# 节点选择器
+nodeSelector: {}
+
+# 容忍度
+tolerations: []
+
+# 亲和性
+affinity: {}
+
+# 环境变量 (GODEBUG 用于 IPv6 问题)
+env:
+  - name: GODEBUG
+    value: "netdns=go"
+
+# 额外环境变量
+extraEnv: []

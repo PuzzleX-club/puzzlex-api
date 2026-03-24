@@ -1,0 +1,33 @@
+{{/*
+API Path 配置 ConfigMap
+用于前端环境变量同步 - 提供 API/WebSocket 路径配置
+参考文档: docs/adr/ADR-075-frontend-env-sync.md
+*/}}
+{{- if .Values.apiConfig.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.apiConfig.configMapName | default "backend-api-config" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "puzzlex-backend.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api-config
+data:
+  # API 路径配置 (前端通过 VITE_API_PATH 等变量使用)
+  API_PATH: {{ .Values.apiConfig.apiPath | default "/api" | quote }}
+  CABLE_PATH: {{ .Values.apiConfig.cablePath | default "/cable" | quote }}
+  WS_PATH: {{ .Values.apiConfig.wsPath | default "/ws" | quote }}
+
+  # GKE 环境的 Base URL (本地环境由前端脚本硬编码)
+  {{- if .Values.apiConfig.apiBaseUrl }}
+  API_BASE_URL: {{ .Values.apiConfig.apiBaseUrl | quote }}
+  {{- end }}
+  {{- if .Values.apiConfig.wsBaseUrl }}
+  WS_BASE_URL: {{ .Values.apiConfig.wsBaseUrl | quote }}
+  {{- end }}
+
+  # 前端访问地址 (用于 CORS 和回调配置)
+  {{- if .Values.apiConfig.frontendUrl }}
+  FRONTEND_URL: {{ .Values.apiConfig.frontendUrl | quote }}
+  {{- end }}
+{{- end }}

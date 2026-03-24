@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [[ -d "/opt/homebrew/opt/ruby/bin" ]]; then
+  export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+elif [[ -d "/usr/local/opt/ruby/bin" ]]; then
+  export PATH="/usr/local/opt/ruby/bin:$PATH"
+fi
+
+if [[ $# -eq 0 ]]; then
+  echo "Usage: ./bin/be <rails|rspec|rubocop|rake ...>"
+  echo "Example: ./bin/be rspec spec/services/order_matching_service/match_strategy_spec.rb"
+  exit 1
+fi
+
+cd "$APP_ROOT"
+
+load_test_env=false
+if [[ "${RAILS_ENV:-}" == "test" || "${RACK_ENV:-}" == "test" || "${1:-}" == "rspec" ]]; then
+  load_test_env=true
+fi
+
+if [[ "$load_test_env" == "true" && -f "$APP_ROOT/.env.test" ]]; then
+  # Force test env URLs from .env.test to avoid placeholders in .env.local leaking into test commands.
+  set -a
+  # shellcheck disable=SC1091
+  source "$APP_ROOT/.env.test"
+  set +a
+  export RAILS_ENV=test
+  export RACK_ENV=test
+fi
+
+exec bundle _2.5.4_ exec "$@"

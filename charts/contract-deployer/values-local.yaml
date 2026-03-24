@@ -1,0 +1,60 @@
+# contract-deployer - 本地环境配置
+# 使用独立 Deployment 模式，提供 API 服务和合约监控
+
+mode: deployment
+
+network:
+  rpcUrl: "http://anvil-testnet:8546"
+  chainId: 31338
+  # 后端使用 K8s Service 名
+  backendRpcUrl: "http://anvil-testnet:8546"
+
+deployment:
+  dryRun: false
+  waitForRpc: true  # 等待 anvil-testnet 就绪
+  keepAlive: true   # Deployment 模式需要保持运行
+
+# 本地使用 Anvil 标准测试私钥
+secrets:
+  name: contract-deployer-keys
+  privateKeyKey: deployer-private-key
+  privateKey: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
+# 本地镜像配置
+image:
+  repository: puzzlex/contract-deployer
+  tag: local
+  pullPolicy: Never  # 使用本地构建的镜像
+
+# API 服务配置
+api:
+  enabled: true
+  port: 3001
+
+# Service 配置
+service:
+  type: ClusterIP
+
+# 健康检查配置 (本地部署较快)
+healthCheck:
+  enabled: true
+  initialDelaySeconds: 90
+  readyInitialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# 资源配置 (本地环境使用较小资源)
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+
+# 前端环境变量同步 - 本地模式
+# 本地环境不启用自动同步，通过脚本从 ConfigMap 读取
+# 使用命令: cd frontend && npm run env:sync:local
+frontendSync:
+  enabled: false
