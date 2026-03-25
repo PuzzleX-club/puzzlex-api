@@ -1,5 +1,7 @@
 # PuzzleX API
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Q5Q61WM14D)
+
 Reference backend implementation for the [PuzzleX](https://github.com/PuzzleX-club) protocol — an open NFT trading platform built on [Seaport](https://github.com/ProjectOpenSea/seaport).
 
 Built with **Ruby on Rails 7**, **Sidekiq**, and **PostgreSQL**.
