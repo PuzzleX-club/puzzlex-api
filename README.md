@@ -1,10 +1,22 @@
 # PuzzleX API
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Q5Q61WM14D)
+[![GitHub Org](https://img.shields.io/badge/GitHub-PuzzleX--club-181717?logo=github&logoColor=white)](https://github.com/PuzzleX-club)
+[![X](https://img.shields.io/badge/X-@PuzzleX__club-000000?logo=x&logoColor=white)](https://x.com/PuzzleX_club)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20PuzzleX-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/Q5Q61WM14D)
+[![Donate with Crypto](https://img.shields.io/badge/Crypto-USDT%20on%20TRON-26A17B?logo=tether&logoColor=white)](https://nowpayments.io/donation?api_key=60e167ac-c9ce-49b4-9286-67008f10e58d)
 
 Reference backend implementation for the [PuzzleX](https://github.com/PuzzleX-club) protocol — an open NFT trading platform built on [Seaport](https://github.com/ProjectOpenSea/seaport).
 
 Built with **Ruby on Rails 7**, **Sidekiq**, and **PostgreSQL**.
+
+## Connect & Support
+
+- PuzzleX organization: [PuzzleX-club](https://github.com/PuzzleX-club)
+- X: [@PuzzleX_club](https://x.com/PuzzleX_club)
+- Donate: [Ko-fi](https://ko-fi.com/Q5Q61WM14D) or [Crypto (USDT on TRON)](https://nowpayments.io/donation?api_key=60e167ac-c9ce-49b4-9286-67008f10e58d)
+- Donation details: [DONATE.md](https://github.com/PuzzleX-club/.github/blob/main/DONATE.md)
+- Contributing: [CONTRIBUTING.md](https://github.com/PuzzleX-club/.github/blob/main/CONTRIBUTING.md)
+- Contributor terms: [CLA.md](https://github.com/PuzzleX-club/.github/blob/main/CLA.md)
 
 This repository is intentionally scoped to a **pure JSON API backend**.
 Legacy Rails-rendered pages, frontend assets, and browser-side build tooling are not part of the public release surface.
